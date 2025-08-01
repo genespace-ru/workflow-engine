@@ -1,0 +1,35 @@
+/*
+ * New folder action
+ */
+{
+    id: "new_folder",
+    label: resources.actTreeNewFolder,
+    icon: "icons/new_folder.gif",
+    visible: "function(completePath)
+    {
+		var path = getElementPath(completePath);
+		var name = getElementName(completePath);
+		if(!name) return -1;
+        var dc = null;
+        var type = null;
+        if(!path)
+        {
+            dc = getDataCollection(completePath);
+            type = dc.getAttributesNoParent()['server-class'];
+        }
+        else
+        {
+            dc = getDataCollection(path);
+            type = dc.getChildClass(name);
+        }
+		if (instanceOf(type,'ru.biosoft.access.core.FolderCollection')) 
+        {
+            return true;
+        }
+        return -1;
+    }",
+    action: "function(completePath)
+    {
+        createGenericCollection(completePath);
+    }"
+}

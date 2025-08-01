@@ -1,0 +1,35 @@
+/*
+ * Change type of element inside FolderDataCollection
+ */
+{
+    id: "find_element_fdc",
+    label: resources.actTreeFind,
+    icon: "icons/search.gif",
+    visible: "function(completePath)
+    {
+      if(!completePath) 
+         return -1;
+      var name = getElementName(completePath);
+      var parentPath = getElementPath(completePath);
+      var parentType = undefined;
+      if(!parentPath)
+      {
+          var dc = getDataCollection(completePath);
+          parentType = dc.getAttributesNoParent()['server-class'];
+      }
+      else
+      {
+          var parentDC = getDataCollection(parentPath);
+          if(parentDC == null)
+            return -1;
+          parentType = parentDC.getChildClass(name);
+      }
+      if (instanceOf(parentType,'ru.biosoft.access.file.GenericFileDataCollection')) 
+        return true;
+      return -1;
+    }",
+    action: "function(completePath)
+    {
+        createFindElementDialog(completePath);
+    }"
+}

@@ -1,0 +1,145 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+ <modelVersion>4.0.0</modelVersion>
+
+ <groupId>ru.biosoft.diagrams</groupId>
+ <artifactId>diagram</artifactId>
+ <packaging>jar</packaging>
+
+ <name>Diagram plugins</name>
+ <description>Core classes for representation and visulisation od diagrams.</description>
+
+ <properties>
+   <encoding>UTF-8</encoding>
+   <maven.compiler.source>17</maven.compiler.source>
+   <maven.compiler.target>17</maven.compiler.target>
+ </properties>
+
+  <parent>
+  <groupId>ru.biosoft</groupId>
+  <artifactId>diagrams</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+ </parent>
+
+ <dependencies>
+
+   <dependency>
+    <groupId>ru.biosoft.diagrams</groupId>
+    <artifactId>misc</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+   </dependency>
+   
+  <dependency>
+    <groupId>ru.biosoft.diagrams</groupId>
+    <artifactId>server</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+   </dependency>
+
+  <dependency>
+    <groupId>ru.biosoft.access</groupId>
+    <artifactId>core</artifactId>
+    <version>2.0.0</version>
+  </dependency>
+  
+  <dependency>
+    <groupId>ru.biosoft.access</groupId>
+    <artifactId>file</artifactId>
+    <version>2.0.0</version>
+  </dependency>
+  
+  <dependency>  
+    <groupId>ru.biosoft.graphics</groupId>
+    <artifactId>core</artifactId>
+    <version>2.0.0</version>
+  </dependency>
+  
+  <dependency>
+    <groupId>ru.biosoft.graphics</groupId>
+    <artifactId>editor</artifactId>
+    <version>2.0.0</version>
+  </dependency>
+  
+  <dependency>  
+    <groupId>ru.biosoft.graph</groupId>
+    <artifactId>core</artifactId>
+    <version>2.0.0</version>
+  </dependency>
+  
+  <dependency>
+    <groupId>com.developmentontheedge</groupId>
+    <artifactId>beans</artifactId>
+    <version>3.0.4</version>
+  </dependency>
+  
+  <!-- https://mvnrepository.com/artifact/one.util/streamex -->
+    <dependency>
+        <groupId>one.util</groupId>
+        <artifactId>streamex</artifactId>
+        <version>0.8.3</version>
+        <!--scope>runtime</scope-->
+    </dependency>
+
+</dependencies>
+ 
+
+ <build>
+ 
+ <resources>
+     <resource>
+       <directory>src/main/resources</directory>
+     </resource>
+   </resources>
+  <plugins>
+
+   <plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-compiler-plugin</artifactId>
+    <version>3.14.0</version>
+    <configuration>
+        <compilerArgs>
+            <arg>--add-modules</arg>
+            <arg>java.se,java.desktop</arg>
+        </compilerArgs>
+    </configuration>
+   </plugin>
+
+   <plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-javadoc-plugin</artifactId>
+    <version>3.11.2</version>
+    <executions>
+     <execution>
+      <id>attach-javadocs</id>
+      <goals>
+       <goal>jar</goal>
+      </goals>
+      <configuration>
+        <doclint>none</doclint>      
+      </configuration>
+     </execution>
+    </executions>
+   </plugin>
+   
+   <plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-jar-plugin</artifactId>
+    <version>3.4.2</version>
+   </plugin>
+   
+   <plugin>
+    <groupId>org.apache.felix</groupId>
+    <artifactId>maven-bundle-plugin</artifactId>
+    <version>6.0.0</version>
+   </plugin>
+   
+   <plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-source-plugin</artifactId>
+    <version>3.3.1</version>
+    
+   </plugin>
+
+  </plugins>
+ </build>
+ 
+</project>

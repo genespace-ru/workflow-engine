@@ -1,0 +1,42 @@
+/*
+ * Open genome browser action
+ */
+{
+    id: "edit_properties",
+    label: resources.actTreeEditCombinedTrack,
+    icon: "icons/edit.gif",
+    visible: "function(completePath)
+    {
+    	if(!completePath) return -1;
+    	var dc = getDataCollection(completePath);
+    	if(!dc || !instanceOf(dc.getClass(), 'ru.biosoft.bsa.track.combined.CombinedTrack')) return -1;
+        return true;
+    }",
+    action: "function(path)
+    {
+        if(!path) return;
+        var dc = getDataCollection(path);
+        if(!dc || !instanceOf(dc.getClass(), 'ru.biosoft.bsa.track.combined.CombinedTrack')) return;
+        createBeanEditorDialog(resources.commonEditElementInfoTitle, path, function()
+        {
+            var dc = getDataCollection(path);
+            dc.invalidateCollection();
+            dc.getHtml(function(info)
+            {
+                $('#info_area').html(info);
+            });
+            var curDoc = opennedDocuments[activeDocumentId];
+            if(curDoc)
+            {
+                if( curDoc.updateDocumentView &&  path.startsWith(curDoc.completeName) )
+                {
+                    curDoc.updateDocumentView();
+                }
+                else if(curDoc.updateItemView)
+                {
+                    curDoc.updateItemView(dc);
+                }
+            }
+        }, true);
+    }"
+}

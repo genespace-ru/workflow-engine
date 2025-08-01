@@ -1,0 +1,29 @@
+repositories:
+- data/src/main/resources/GenericFDC
+preferences: preferences.xml
+perspectives:
+    - perspective:
+        name: Default
+        priority: 0
+        projectSelector: true
+        repository:
+            - tab:
+                title: Examples
+                path: GenericFDC
+        viewparts:
+            - rule:
+                name: deny
+                id: track.finder
+            - rule:
+                name: allow
+                id: sequence.sites
+        actions:
+            - rule: 
+                name: deny
+                id: Apply antimony
+        importers:
+            name: test
+environment:
+    ServerPath: "../diagrams/"
+    DocRoot: "/diagrams"
+defaultPath: GenericFDC

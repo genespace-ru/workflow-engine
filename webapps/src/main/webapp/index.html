@@ -1,0 +1,380 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>Genome Browser BioUML</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="description" content="Genome Browser framework for system biology" />
+    <link rel="stylesheet" href="css/bootstrap.css">
+	<link type="text/css" href="css/ui/custom-theme/jquery-ui-1.13.1.css" rel="stylesheet" />
+	<link rel="stylesheet" href="css/main.css">
+	<link type="text/css" href="css/table/table.css" rel="stylesheet" />
+	<link type="text/css" href="css/propertyInspector/js_pi.css" rel="stylesheet" />
+    <link rel="stylesheet" href="lib/jstree/themes/default/style.css" />
+    <link rel="stylesheet" type="text/css" href="css/contextMenu/jquery.contextMenu-2.9.2.css" />
+    <link type="text/css" href="css/jpicker/jPicker-1.1.6.min.css" rel="stylesheet" />
+    <!--    
+            <link rel="stylesheet" href="lib/jstree/themes/default/style.css" />
+            
+            <link type="text/css" href="css/treetable/jquery.treeTable.css" rel="stylesheet" />
+            <link type="text/css" href="css/main.css" rel="stylesheet" />
+            <link type="text/css" href="css/description.css" rel="stylesheet" />
+            <link type="text/css" href="css/workflows.css" rel="stylesheet" />
+            <link type="text/css" href="css/propertyInspector/js_pi.css" rel="stylesheet" />
+            <link type="text/css" href="css/messenger/message.css" rel="stylesheet" />
+            <link type="text/css" href="css/extended.css" rel="stylesheet" />
+        -->
+    
+	<script type="text/javascript" src="lib/jquery/jquery-3.6.0.min.js"></script>
+	<script type="text/javascript" src="lib/jquery/jquery.inherit-1.3.6.mod.js"></script>
+	<script type="text/javascript" src="lib/jquery/jquery.ui.touch-punch.min.js"></script>
+	<script type="text/javascript" src="lib/jquery/jquery.json-2.2.min.js"></script>
+	<script type="text/javascript" src="lib/jquery/jquery.mousewheel.min.js"></script>
+    <script type="text/javascript" src="lib/jquery/jquery.includeMany-1.2.2.js"></script>
+    <script type="text/javascript" src="lib/jquery/jquery.scrollview.mod.js"></script>
+	<script type="text/javascript" src="lib/table/jquery.dataTables.js"></script>
+	<script type="text/javascript" src="lib/table/tableUtils.js"></script>
+	<script type="text/javascript" src="lib/contextMenu/jquery.contextMenu-2.9.2.js"></script>
+    <script type="text/javascript" src="lib/jpicker/jpicker-1.1.6.min.js"></script>
+	<script type="text/javascript" src="lib/underscore/underscore-min.js"></script>
+    <script type="text/javascript" src="lib/ui/jquery-ui-1.13.1.js"></script>
+	<script type="text/javascript" src="lib/ui/ui.tabs.paging.js"></script>
+    <script type="text/javascript" src="lib/jstree/jstree.min.js"></script>
+    <script type="text/javascript" src="lib/splitter/jquery.splitter.js"></script>
+    
+	<script type="text/javascript" src="lib/propertyInspector/dpiUtils.js"></script>
+	<script type="text/javascript" src="lib/propertyInspector/dpi.min.js"></script>
+    <script type="text/javascript" src="lib/propertyInspector/JSDataElementPathEditor.js"></script>
+    <script type="text/javascript" src="lib/propertyInspector/JSDataElementSelector.js"></script>
+    <script type="text/javascript" src="lib/propertyInspector/JSArrayControl.js"></script>
+    <script type="text/javascript" src="lib/propertyInspector/JSColorSelector.js"></script>
+    <!--
+        
+        
+        <script type="text/javascript" src="lib/propertyInspector/JSFileUploader.js"></script>
+        <script type="text/javascript" src="lib/propertyInspector/JSWorkflowExpressionEditBox.js"></script>
+        <script type="text/javascript" src="lib/propertyInspector/JSTextScriptEditBox.js"></script>
+        <script type="text/javascript" src="lib/propertyInspector/JSUrlBuilder.js"></script>
+        
+    -->
+	
+    <script type="text/javascript" src="defines.js"></script>
+    	      
+	<script type="text/javascript" src="lib/urlHandler.js"></script>
+	<script type="text/javascript" src="lib/core.js"></script>
+	<script type="text/javascript" src="lib/dataCollection.js"></script>
+	<script type="text/javascript" src="lib/documents.js"></script>
+	<script type="text/javascript" src="lib/uiCommons.js"></script>
+	<script type="text/javascript" src="lib/dialogs.js"></script>
+	<script type="text/javascript" src="lib/serverQuery.js"></script>
+	<script type="text/javascript" src="lib/viewparts.js"></script>
+	<!--script type="text/javascript" src="lib/viewpartsBsa.js"></script-->
+	<script type="text/javascript" src="lib/polymorph.js"></script>
+	<script type="text/javascript" src="lib/graph/graph.js"></script>
+	<script type="text/javascript" src="lib/graph/viewpane.js"></script>
+	<!--script type="text/javascript" src="lib/sequence.js"></script-->
+    <script type="text/javascript" src="lib/cookies.js"></script>
+    <script type="text/javascript" src="lib/messageBundle.js"></script>
+    <script type="text/javascript" src="lib/messageBundle.en.js"></script>
+    <script type="text/javascript" src="lib/messageBundle.ru.js"></script>
+    <script type="text/javascript" src="lib/setLocale.js"></script>
+    
+    <script type="text/javascript" src="lib/copy.js"></script>
+    
+    <script type="text/javascript" src="lib/upload.js"></script>
+    <script type="text/javascript" src="lib/serverMessages.js"></script>
+    <script type="text/javascript" src="lib/toolbar.js"></script>
+    <script type="text/javascript" src="lib/uiActions.js"></script>
+    <script type="text/javascript" src="lib/jsActions.js"></script>
+    <script type="text/javascript" src="lib/preferences.js"></script>
+    <script type="text/javascript" src="lib/tree.js"></script>
+    <script type="text/javascript" src="lib/import_new.js"></script>
+    <script type="text/javascript" src="lib/infoPane.js"></script>
+    <script type="text/javascript" src="lib/contextToolbar.js"></script>
+    
+    <!--script type="text/javascript" src="lib/diagramSupport.js"></script>
+    <script type="text/javascript" src="lib/diagram.js"></script-->
+    
+    
+    <script type="text/javascript" src="lib/user.js"></script>
+    <script type="text/javascript" src="lib/framework.js"></script>
+    <script type="text/javascript" src="lib/iframeCommons.js"></script>
+    <script type="text/javascript" src="lib/onDemandLoader.js"></script>
+    
+    <script type="text/javascript" src="lib/table.js"></script>
+    <script type="text/javascript" src="lib/viewpartsTable.js"></script>
+    <!--script src="gbrowser.js"></script-->
+    <!--script src="dummys.js"></script-->
+    
+    <!--
+                ???<script type="text/javascript" src="lib/jquery/jquery.jeditable.js"></script>
+               ??? <script type="text/javascript" src="lib/jquery/jquery.scrollview.mod.js"></script>
+                
+                ??? (for search tab)<script type="text/javascript" src="lib/lucene.js"></script>
+                <script type="text/javascript" src="lib/javascript.js"></script>
+                <script type="text/javascript" src="lib/projectUtils.js"></script>
+    -->
+	
+	<style>
+		#gb-viewPartTabs {
+		    overflow: hidden;
+		    padding:2px;
+			border-radius:unset;
+		}
+		
+		#gb-viewPartTabs > div {
+		    overflow: auto;
+		    padding: 10px 15px;
+		    min-height: 244px;
+		}
+	   .gb_header{
+		    background-color:#343a40;
+		    color:#fff;
+		    text-align: center;
+		    font-family:helvetica, tahoma, arial, sans-serif;
+		    font-size: 20pt;
+		    padding: 20px;
+		}
+		.region_selector {
+    		display: none;
+    		z-index: 1;
+		}
+
+		.region_selector_dotes {
+		    border: 2px solid red;
+		    background: #ffffff;
+		    font-size: 0;
+		}
+		
+		.buttons_pane {
+			border: 1px solid #ccc;
+			padding: 5px 30px;
+			margin: 20px auto;
+			text-align:center;
+			vertical-align: middle;
+		}
+		.gb_container {
+			padding-top: 20px;
+		}
+		.buttons_pane .gb-separator {
+			width: 10px;
+			height: 16px;
+			display: inline-block;
+		}
+		#info_area {
+			padding: 10px 5px 5px 20px;;
+			min-height:250px;
+			overflow:auto;
+		}
+		.buttons_pane .gb-button {
+    		display: inline-block;
+    		outline: 0;
+		    margin: 0 0 0 0;
+		    padding: .2em .2em;
+		    text-decoration: none !important;
+		    cursor: pointer;
+		    position: relative;
+		    text-align: center;
+		    zoom: 1;
+		}
+
+		.gb-controls-container {
+		    width:100%;
+		    border:1px solid #ccc;
+		}
+		.gb-controls-container div {
+		    width:100%;
+		}
+		.gb-controls-container .header {
+		    background-color:#ccc;
+		    padding: 2px;
+		    cursor: pointer;
+		    font-weight: bold;
+		}
+		.gb-controls-container .content {
+		    display: none;
+		    padding : 5px;
+		}
+		
+		#gb-mainPane {
+		    overflow: hidden;
+		    width: 100%
+		}
+		
+		
+		#gb-topPane {
+		    overflow: hidden;
+		    height: 60%;
+		}
+		
+		
+		#gb-leftBottomPane {
+		    overflow: auto;
+		    width: 30%;
+		    float:left;
+		    border:1px solid #aaa;
+		}
+		
+		#gb-rightBottomPane {
+		    overflow: hidden;
+		}
+
+		body {
+		    margin-top: 0px;
+		    margin-bottom: 0px;
+		    margin-left: 0px;
+		    margin-right: 0px;
+		    overflow: auto;
+		}
+	</style>
+	<script>
+	  	function runGB()
+	  	{
+	  		//initSplitPanes2();
+	  		//login(function(){
+	  		//	loadContent();
+	  		//});
+	  	}
+	</script>
+</head>
+<body onload="runGB()" >
+    <div id="mainToolbar" class="fg-toolbar ui-widget-header ui-corner-all ui-helper-clearfix">
+        <!-- div class="ajaxLoaderHidden"></div-->
+    </div>
+    <div id="mainPane">
+        <div id="topPane">
+            <div id="leftTopPane">
+                <div id="contextToolbar" class="fg-toolbar ui-widget-header ui-corner-all ui-helper-clearfix">
+                </div>
+                <div id="repositoryTabs">
+                    <ul>
+                    </ul>
+                </div>
+                <!--iv id="analysisSearchToolbar" class="fg-toolbar ui-widget-header ui-corner-all ui-helper-clearfix">
+                    <input type="text" id="analysis_search_string" class="tree_input_string" />
+                    <span id="analysis_search_button" class="btn-search fg-button ui-state-default fg-button-icon-solo ui-corner-all" title="Search">
+                    <img class="fg-button-icon-span" src="icons/search.gif"></img></span>
+                </div-->
+            </div>
+            <div id="rightTopPane">
+                <div id="documentTabs">
+                    <ul>
+                        <li>
+                            <a href="#intro" id="intro_tab"><span>Start page</span></a>
+                        </li>
+                    </ul>
+                    <div id="intro" class="documentTab" style="position:relative;padding:0;">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="bottomPane">
+            <div id="leftBottomPane">
+                <div id="infoTabs">
+                    <ul>
+                        <!--li>
+                            <a href="#search_tab_container" id="search_tab"><span>Search</span></a>
+                        </li-->
+                        <li>
+                            <a href="#info_tab_container"><span>Info</span></a>
+                        </li>
+                    </ul>
+                    <!--div id="search_tab_container" style="position:relative;padding:0;background: #ddd;">
+                        <div id="lucene_search">
+                            <div id="search_target">
+                                <b>Select database to search in...</b>
+                            </div>
+                            <table>
+                                <tr>
+                                    <td>
+                                        <input type="text" id="search_string" />
+                                    </td>
+                                    <td width="20px">
+                                        <a id="search_button" href="#" class="fg-button ui-state-default fg-button-icon-solo  ui-corner-all" title="Search"><img class="fg-button-icon-span" src="icons/search.gif"></img>
+                                        </a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td align="left">
+                                        <input type="checkbox" id="search_add_asterisk" name="search_add_asterisk">
+                                        <label for="search_add_asterisk"></label>Add * for your search term</label>
+                                    </td>
+                                </tr>
+                            </table>
+                            <br>
+                            <br>
+                            <div id="filter" width="100%">
+                                <table border=0>
+                                    <tr>
+                                        <td><b>Collection:</b></td>
+                                        <td>
+                                            <select id="collections" style="width:100%;">
+                                                <option value="-All-">-All-</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><b>Field name:</b></td>
+                                        <td>
+                                            <select id="fields" style="width:100%;">
+                                                <option value="-All-">-All-</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div-->
+                    <div id="info_tab_container" class="elementDescriptionScrollPane" style="position:relative;padding:0;">
+                        <div id="info_area" class="elementDescription">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="rightBottomPane">
+                <div id="viewPartTabs">
+
+                    <ul>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+        
+	<!--div class="gb_header">Genome browser</div>
+		<div id="gb-topPane" class="gb_container ui-widget">
+			<div>
+				<div id="gbrowser-karyo"></div>
+				
+				<div id="gb-buttons" class="buttons_pane">
+					<span id="gb-button-zoomin" class="gb-button ui-state-default fg-button-icon-solo ui-corner-all" title="Semantic zoom in"><img class="fg-button-icon-span" src="icons/zoomin.gif"></span>
+			        <span id="gb-button-zoomout" class="gb-button ui-state-default fg-button-icon-solo ui-corner-all" title="Semantic zoom out"><img class="fg-button-icon-span" src="icons/zoomout.gif"></span>
+			        <span class="gb-separator"></span>
+			        <span id="gb-button-overview" class="gb-button ui-state-default fg-button-icon-solo ui-corner-all" title="Overview"><img class="fg-button-icon-span" src="icons/overview.gif"></span>
+			        <span id="gb-button-default" class="gb-button ui-state-default fg-button-icon-solo ui-corner-all" title="Default"><img class="fg-button-icon-span" src="icons/default.gif"></span>
+			        <span id="gb-button-detailed" class="gb-button ui-state-default fg-button-icon-solo ui-corner-all" title="Detailed"><img class="fg-button-icon-span" src="icons/detailed.gif"></span>
+			        <span class="gb-separator"></span>
+			        <span id="gb-button-back" class="gb-button ui-state-default fg-button-icon-solo ui-corner-all" title="Shift to the left"><img class="fg-button-icon-span" src="icons/page_backward.gif"></span>
+			        <span id="gb-button-forward" class="gb-button ui-state-default fg-button-icon-solo ui-corner-all" title="Shift to the right"><img class="fg-button-icon-span" src="icons/page_forward.gif"></span>
+			        <span class="gb-separator"></span>
+			        <span id="gb-button-toggleui" class="gb-button ui-state-default fg-button-icon-solo ui-corner-all" title="Show additional options"><img class="fg-button-icon-span" src="icons/toggleui.png"></span>
+			    </div>
+			    
+			    <div id="gbrowser"></div>
+		    </div>
+    	</div>
+	    <div id="gb-bottomPane" >
+			<div id="gb-leftBottomPane">
+		   		<div class="ui-widget-header ui-corner-all" style="height:25px;padding:2px;margin:2px;"> 
+		   		<span class="ui-widget" style="line-height:25px;vertical-align:middle;padding-left:10px;">Site details</span>
+		   		</div>
+		   		<div id="info_area" class="gb_info ui-widget" style="">Click on the site to view details</div>
+		    </div>
+			<div id="gb-rightBottomPane">
+				<div id="gb-viewPartTabs">
+		             <ul>
+		             </ul>
+				</div>
+			</div>
+		</div-->
+        </body>    
+</html>
