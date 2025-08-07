@@ -3,6 +3,7 @@ openSequence.json
 openTable.json
 openFile.json
 openText.json
+openDiagram.json
 expand.json
 newElement.json
 newFolder.json
@@ -21,4 +22,3 @@ gitCommit.json:Experimental
 gitPush.json:Experimental
 findElement.json
 openAlignmentViewer.json
-openDiagram.json

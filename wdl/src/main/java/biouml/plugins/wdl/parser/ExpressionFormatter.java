@@ -1,0 +1,63 @@
+package biouml.plugins.wdl.parser;
+
+public class ExpressionFormatter
+{
+    protected StringBuilder result;
+
+    public String format(SimpleNode start)
+    {
+        result = new StringBuilder();
+
+        if( start != null )
+        {
+            int n = start.jjtGetNumChildren();
+            for( int i = 0; i < n; i++ )
+                processNode( start.jjtGetChild( i ) );
+        }
+        return result.toString();
+    }
+
+    protected void processNode(Node node)
+    {
+        if( node instanceof AstArray )
+            processArray( (AstArray)node );
+        else if( node instanceof AstFunction )
+            processFunction( (AstFunction)node );
+        else if( node instanceof AstText )
+            processText( (AstText)node );
+        else if( node instanceof AstContainerElement )
+            processContainer( (AstContainerElement)node );
+
+        else
+            result.append( node.toString() );
+    }
+
+    private void processArray(AstArray array)
+    {
+        for( Node child : array.getChildren() )
+            processNode( child );
+    }
+
+    protected void processText(AstText node)
+    {
+        result.append( "\"" );
+        result.append( node.toString() );
+        result.append( "\"" );
+    }
+
+    protected void processContainer(AstContainerElement node)
+    {
+        result.append( node.toString() );
+        result.append( "[" );
+        for( Node child : node.children )
+            processNode( child );
+        result.append( "]" );
+    }
+
+    protected void processFunction(AstFunction node)
+    {
+        result.append( node.toString() );
+        for( Node child : node.children )
+            processNode( child );
+    }
+}

@@ -1,2 +1,5 @@
+files:
+- name: scatter_1
+  type: BioUML diagram
 properties:
   root: 'true'
