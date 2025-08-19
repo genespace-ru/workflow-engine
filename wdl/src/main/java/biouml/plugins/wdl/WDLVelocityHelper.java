@@ -7,20 +7,12 @@ import biouml.model.Compartment;
 import biouml.model.Diagram;
 import biouml.model.Node;
 import biouml.plugins.wdl.WDLUtil.ImportProperties;
-import biouml.plugins.wdl.diagram.WDLConstants;
 
-public class WDLVelocityHelper
+public class WDLVelocityHelper extends WorkflowVelocityHelper
 {
-    private Diagram diagram;
-
     public WDLVelocityHelper(Diagram diagram)
     {
-        this.diagram = diagram;
-    }
-
-    public String getName()
-    {
-        return diagram.getName();
+        super(diagram);
     }
 
     public List<Node> getExternalParameters()
@@ -77,7 +69,17 @@ public class WDLVelocityHelper
     {
         return WDLUtil.getRuntime( c );
     }
-
+    
+    public Map<String, String> getMeta(Compartment c)
+    {
+        return WDLUtil.getMeta( c );
+    }
+    
+    public Map<String, String> getParametersMeta(Compartment c)
+    {
+        return WDLUtil.getParameterMeta( c );
+    }
+    
     public String getExpression(Node n)
     {
         return WDLUtil.getExpression( n );
