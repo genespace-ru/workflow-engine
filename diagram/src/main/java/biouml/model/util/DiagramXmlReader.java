@@ -47,6 +47,7 @@ import biouml.model.EquivalentNodeGroup;
 //import biouml.model.ModelDefinition;
 import biouml.model.Module;
 import biouml.model.Node;
+import biouml.model.state.StateXmlSerializer;
 //import biouml.model.SubDiagram;
 //import biouml.model.SubDiagram.PortOrientation;
 //import biouml.model.dynamics.Connection;
@@ -1547,12 +1548,11 @@ public class DiagramXmlReader extends DiagramXmlSupport implements DiagramReader
 
     public void readStates(Element element, Diagram diagram)
     {
-        //TODO: commented State
-        //        if( element == null )
-        //            return;
-        //        NodeList list = element.getChildNodes();
-        //        for( Element child : XmlUtil.elements( list ) )
-        //            diagram.addState( StateXmlSerializer.readXmlElement( child, diagram, this ) );
+        if( element == null )
+            return;
+        NodeList list = element.getChildNodes();
+        for ( Element child : XmlUtil.elements( list ) )
+            diagram.addState( StateXmlSerializer.readXmlElement( child, diagram, this ) );
     }
 
     private final List<String> kernelNames = new ArrayList<>();

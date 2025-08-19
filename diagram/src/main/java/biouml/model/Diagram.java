@@ -25,9 +25,11 @@ import java.util.logging.Logger;
 
 import ru.biosoft.access.core.DataCollection;
 import ru.biosoft.access.core.DataCollectionListener;
+import ru.biosoft.access.exception.BiosoftCustomException;
 import ru.biosoft.exception.ExceptionRegistry;
 import ru.biosoft.exception.InternalException;
 import ru.biosoft.access.core.ClassIcon;
+import ru.biosoft.access.core.CloneableDataElement;
 import ru.biosoft.access.security.NetworkDataCollection;
 import ru.biosoft.graph.Layouter;
 //import ru.biosoft.plugins.graph.GraphPlugin;
@@ -37,11 +39,13 @@ import ru.biosoft.util.TextUtil2;
 import com.developmentontheedge.beans.annot.PropertyDescription;
 import com.developmentontheedge.beans.annot.PropertyName;
 
+import biouml.model.graph.GraphPlugin;
+import biouml.model.graph.LayouterDescriptor;
+import biouml.model.state.State;
+import biouml.model.state.StateChangeListener;
+import biouml.model.state.StateDiagramViewBuilder;
 //import biouml.model.dynamics.EModel;
 //import biouml.standard.diagram.DiagramUtility;
-//import biouml.standard.state.State;
-//import biouml.standard.state.StateChangeListener;
-//import biouml.standard.state.StateDiagramViewBuilder;
 import biouml.standard.type.Base;
 import biouml.standard.type.DiagramInfo;
 import biouml.standard.type.Referrer;
@@ -52,7 +56,7 @@ import com.developmentontheedge.beans.util.Beans;
 
 @ClassIcon ( "resources/diagram.gif" )
 @PropertyName ( "Diagram" )
-public class Diagram extends Compartment
+public class Diagram extends Compartment implements CloneableDataElement
 {
     protected static final Logger log = Logger.getLogger( Diagram.class.getName() );
 
@@ -71,7 +75,7 @@ public class Diagram extends Compartment
     protected DiagramType type;
     protected DiagramViewOptions viewOptions;
     protected String currentStateName = NON_STATE;
-    //protected State currentState = null;
+    protected State currentState = null;
 
     private Set<String> names = new HashSet<>();
 
@@ -95,26 +99,10 @@ public class Diagram extends Compartment
         getInfo().getProperties().setProperty( NetworkDataCollection.CLONE_FOR_EDIT_PROPERTY, "true" );
     }
 
-/*
-    public Diagram( DataCollection<?> origin, Properties properties ) throws Exception
-    {
-        super( origin, properties.getProperty( "name" ), null );
-        Iterator<Object> iter = properties.keySet().iterator();
-        while( iter.hasNext() )
-        {
-            String key = iter.next().toString();
-            getInfo().getProperties().put( key, properties.getProperty( key ) );
-        }
-    } 
-*/
-
-
     @Override
     public void setTitle(String title)
     {
         super.setTitle( title );
-//        String realTitle = title != null ? title : name;
-//        getInfo().setDisplayName( realTitle );
     }
 
     public static @Nonnull Diagram getDiagram(DiagramElement de)
@@ -174,11 +162,10 @@ public class Diagram extends Compartment
         if( pathLayouter == null )
             return "Default layouter";
 
-        //TODO: commented GraphPlugin, LayouterDescriptor
-        //        List<LayouterDescriptor> layouters = GraphPlugin.loadLayouters();
-        //        for( LayouterDescriptor layouterDescriptor : layouters )
-        //            if( layouterDescriptor.getType() == pathLayouter.getClass() )
-        //                return layouterDescriptor.getDescription();
+        List<LayouterDescriptor> layouters = GraphPlugin.loadLayouters();
+        for ( LayouterDescriptor layouterDescriptor : layouters )
+            if( layouterDescriptor.getType() == pathLayouter.getClass() )
+                return layouterDescriptor.getDescription();
         return "Default layouter";
     }
 
@@ -342,195 +329,199 @@ public class Diagram extends Compartment
             stream( Diagram.class ).forEach( d -> d.setNotificationEnabled( notificationEnabled ) );
         }
     }
-    //TODO: commented State
-    //    protected HashMap<String, State> states;
-    //
-    //    public boolean containState(State state)
-    //    {
-    //        return states != null && states.containsKey( state.getName() ) && states.get( state.getName() ).equals( state );
-    //    }
-    //
-    //    public void addState(State state)
-    //    {
-    //        Object oldValue = states;
-    //        if( states == null )
-    //            states = new HashMap<>();
-    //        states.put( state.getName(), state );
-    //        firePropertyChange( "states", oldValue, states );
-    //    }
-    //
-    //    public void removeAllStates()
-    //    {
-    //        if( states == null )
-    //            return;
-    //        Object oldValue = states;
-    //        if( currentState != null  )
-    //            restore();
-    //
-    //        states = null;
-    //        firePropertyChange( "states", oldValue, states );
-    //    }
-    //
-    //    public void removeState(State state)
-    //    {
-    //        Object oldValue = states;
-    //        if( states == null )
-    //            return;
-    //
-    //        if( currentState != null && currentState.equals( state ) )
-    //            restore();
-    //
-    //        State stateWithSameName = states.get( state.getName() );
-    //        if( stateWithSameName.equals( state ) )
-    //        {
-    //            states.remove( state.getName() );
-    //        }
-    //        firePropertyChange( "states", oldValue, states );
-    //    }
-    //
-    //    /**
-    //     * @return StreamEx of all Diagram states
-    //     */
-    //    public @Nonnull StreamEx<State> states()
-    //    {
-    //        return states == null ? StreamEx.empty() : StreamEx.ofValues( states );
-    //    }
-    //
-    //    public State getCurrentState()
-    //    {
-    //        return currentState;
-    //    }
-    //
-    //protected StateChangeListener undoRedoListener = null;
-    // protected Transactable transactable;
-    //    public void setStateEditingMode(State state)
-    //    {
-    //        setStateEditingMode( state, null );
-    //    }
-    //
-    //    public void setStateEditingMode(State state, Transactable transactable)
-    //    {
-    //        restore();
-    //        this.transactable = transactable;
-    //        currentState = state;
-    //        String oldValue = currentStateName;
-    //        currentStateName = currentState.getName();
-    //
-    //        getViewOptions();
-    //        DiagramViewBuilder viewBuilder = type.getDiagramViewBuilder();
-    //        type.setDiagramViewBuilder( new StateDiagramViewBuilder( viewBuilder, state, this ) );
-    //
-    //        UndoManager undoManager = state.getStateUndoManager();
-    //        while( undoManager.canRedo() )
-    //        {
-    //            undoManager.redo();
-    //        }
-    //        firePropertyChange( "currentStateName", oldValue, currentStateName );
-    //
-    //        undoRedoListener = new StateChangeListener( state );
-    //        addDataCollectionListener( undoRedoListener );
-    //        addPropertyChangeListener( undoRedoListener );
-    //        if( this.transactable != null )
-    //            this.transactable.addTransactionListener( undoRedoListener );
-    //    }
-    //
-    //    /**
-    //     * Sets default state
-    //     */
+
+    protected HashMap<String, State> states;
+
+    public boolean containState(State state)
+    {
+        return states != null && states.containsKey( state.getName() ) && states.get( state.getName() ).equals( state );
+    }
+
+    public void addState(State state)
+    {
+        Object oldValue = states;
+        if( states == null )
+            states = new HashMap<>();
+        states.put( state.getName(), state );
+        firePropertyChange( "states", oldValue, states );
+    }
+
+    public void removeAllStates()
+    {
+        if( states == null )
+            return;
+        Object oldValue = states;
+        if( currentState != null )
+            restore();
+
+        states = null;
+        firePropertyChange( "states", oldValue, states );
+    }
+
+    public void removeState(State state)
+    {
+        Object oldValue = states;
+        if( states == null )
+            return;
+
+        if( currentState != null && currentState.equals( state ) )
+            restore();
+
+        State stateWithSameName = states.get( state.getName() );
+        if( stateWithSameName.equals( state ) )
+        {
+            states.remove( state.getName() );
+        }
+        firePropertyChange( "states", oldValue, states );
+    }
+
+    /**
+     * @return StreamEx of all Diagram states
+     */
+    public @Nonnull StreamEx<State> states()
+    {
+        return states == null ? StreamEx.empty() : StreamEx.ofValues( states );
+    }
+
+    public State getCurrentState()
+    {
+        return currentState;
+    }
+
+    protected StateChangeListener undoRedoListener = null;
+    protected Transactable transactable;
+
+    public void setStateEditingMode(State state)
+    {
+        setStateEditingMode( state, null );
+    }
+
+    public void setStateEditingMode(State state, Transactable transactable)
+    {
+        restore();
+        this.transactable = transactable;
+        currentState = state;
+        String oldValue = currentStateName;
+        currentStateName = currentState.getName();
+
+        getViewOptions();
+        DiagramViewBuilder viewBuilder = type.getDiagramViewBuilder();
+        type.setDiagramViewBuilder( new StateDiagramViewBuilder( viewBuilder, state, this ) );
+
+        UndoManager undoManager = state.getStateUndoManager();
+        while ( undoManager.canRedo() )
+        {
+            undoManager.redo();
+        }
+        firePropertyChange( "currentStateName", oldValue, currentStateName );
+
+        undoRedoListener = new StateChangeListener( state );
+        addDataCollectionListener( undoRedoListener );
+        addPropertyChangeListener( undoRedoListener );
+        if( this.transactable != null )
+            this.transactable.addTransactionListener( undoRedoListener );
+    }
+
+    /**
+     * Sets default state
+     */
 
     public void restore()
     {
-        //TODO: commented State
-        //        DiagramViewBuilder viewBuilder = getType().getDiagramViewBuilder();
-        //        if( viewBuilder instanceof StateDiagramViewBuilder )
-        //        {
-        //            getType().setDiagramViewBuilder( ( (StateDiagramViewBuilder)viewBuilder ).getBaseViewBuilder() );
-        //        }
-        //        if( currentState != null )
-        //        {
-        //            if( undoRedoListener != null )
-        //            {
-        //                removeDataCollectionListener( undoRedoListener );
-        //                removePropertyChangeListener( undoRedoListener );
-        //                undoRedoListener = null;
-        //            }
-        //            UndoManager undoManager = currentState.getStateUndoManager();
-        //            //boolean notificationEnabled = isNotificationEnabled();
-        //            //setNotificationEnabled( false );
-        //            while( undoManager.canUndo() )
-        //            {
-        //                undoManager.undo();
-        //            }
-        //            //setNotificationEnabled( notificationEnabled );
-        //            if( currentState != null )
-        //            {
-        //                currentState = null;
-        //                String oldValue = currentStateName;
-        //                currentStateName = NON_STATE;
-        //                firePropertyChange( "currentStateName", oldValue, currentStateName );
-        //            }
-        //            if( this.transactable != null )
-        //            {
-        //                this.transactable.removeTransactionListener( undoRedoListener );
-        //                this.transactable = null;
-        //            }
-        //        }
+        DiagramViewBuilder viewBuilder = getType().getDiagramViewBuilder();
+        if( viewBuilder instanceof StateDiagramViewBuilder )
+        {
+            getType().setDiagramViewBuilder( ((StateDiagramViewBuilder) viewBuilder).getBaseViewBuilder() );
+        }
+        if( currentState != null )
+        {
+            if( undoRedoListener != null )
+            {
+                removeDataCollectionListener( undoRedoListener );
+                removePropertyChangeListener( undoRedoListener );
+                undoRedoListener = null;
+            }
+            UndoManager undoManager = currentState.getStateUndoManager();
+            //boolean notificationEnabled = isNotificationEnabled();
+            //setNotificationEnabled( false );
+            while ( undoManager.canUndo() )
+            {
+                undoManager.undo();
+            }
+            //setNotificationEnabled( notificationEnabled );
+            if( currentState != null )
+            {
+                currentState = null;
+                String oldValue = currentStateName;
+                currentStateName = NON_STATE;
+                firePropertyChange( "currentStateName", oldValue, currentStateName );
+            }
+            if( this.transactable != null )
+            {
+                this.transactable.removeTransactionListener( undoRedoListener );
+                this.transactable = null;
+            }
+        }
     }
-        //
-        //    @PropertyName("State")
-        //    @PropertyDescription("Current state.")
-        //    public String getCurrentStateName()
-        //    {
-        //        return currentStateName;
-        //    }
-        //    public void setCurrentStateName(String currentStateName)
-        //    {
-        //        //        if( !this.currentStateName.equals( NON_STATE ) )
-        //        //            restore();
-        //
-        //        boolean restored = false;
-        //        if( states != null )
-        //        {
-        //            State curState = states.get( currentStateName );
-        //            if( curState != null )
-        //            {
-        //                setStateEditingMode( curState );
-        //                restored = true;
-        //            }
-        //            //            StreamEx.ofValues( states ).findFirst( state -> state.getName().equals( currentStateName ) )
-        //            //                    .ifPresent( this::setStateEditingMode );
-        //        }
-        //        if( !restored && !this.currentStateName.equals( NON_STATE ) )
-        //            restore();
-        //    }
-        //
-        //    public List<String> getStateNames()
-        //    {
-        //        List<String> names = new ArrayList<>();
-        //        names.add( NON_STATE );
-        //        if( states != null )
-        //            names.addAll( states.keySet() );
-        //        return names;
-        //    }
-        //
-        //    public State getState(String name)
-        //    {
-        //        if( states == null )
-        //            return null;
-        //
-        //        return states.get( name );
-        //    }
+
+    @PropertyName("State")
+    @PropertyDescription("Current state.")
+    public String getCurrentStateName()
+    {
+        return currentStateName;
+    }
+
+    public void setCurrentStateName(String currentStateName)
+    {
+        boolean restored = false;
+        if( states != null )
+        {
+            State curState = states.get( currentStateName );
+            if( curState != null )
+            {
+                setStateEditingMode( curState );
+                restored = true;
+            }
+        }
+        if( !restored && !this.currentStateName.equals( NON_STATE ) )
+            restore();
+    }
+
+    public List<String> getStateNames()
+    {
+        List<String> names = new ArrayList<>();
+        names.add( NON_STATE );
+        if( states != null )
+            names.addAll( states.keySet() );
+        return names;
+    }
+
+    public State getState(String name)
+    {
+        if( states == null )
+            return null;
+
+        return states.get( name );
+    }
 
     //////////////////////////////////////////////////////////////////
     // clone issues
     //
 
-    public @Nonnull Diagram clone(DataCollection<?> origin, String newName) throws Exception
+    public @Nonnull Diagram clone(DataCollection<?> origin, String newName) throws CloneNotSupportedException
     {
         boolean notif = this.isNotificationEnabled();
         this.setNotificationEnabled( false );
-        Diagram diagram = getType().clone().createDiagram( origin, newName, null );
-        doClone( diagram );
+        Diagram diagram;
+        try
+        {
+            diagram = getType().clone().createDiagram( origin, newName, null );
+            doClone( diagram );
+        }
+        catch (Exception e)
+        {
+            throw ExceptionRegistry.translateException( e );
+        }
         diagram.getType().postProcessClone( this, diagram );
         this.setNotificationEnabled( notif );
         return diagram;
@@ -597,15 +588,14 @@ public class Diagram extends Compartment
             diagram.setFilterList( newFilters.toArray( new DiagramFilter[newFilters.size()] ) );
         }
 
-        //TODO: commented state
-        //        if( states != null )
-        //        {
-        //            for( State state : states.values() )
-        //            {
-        //                state.clone( null, diagram, state.getName() );
-        //            }
-        //        }
-        //        diagram.setCurrentStateName( getCurrentStateName() );
+        if( states != null )
+        {
+            for ( State state : states.values() )
+            {
+                state.clone( null, diagram, state.getName() );
+            }
+        }
+        diagram.setCurrentStateName( getCurrentStateName() );
 
         if( pathLayouter != null )
         {
@@ -708,13 +698,12 @@ public class Diagram extends Compartment
         this.hideInvisibleElements = hideInvisibleElements;
     }
 
-    //TODO: commented state
-    //    public void removeStates()
-    //    {
-    //        if( !this.currentStateName.equals( NON_STATE ) )
-    //            restore();
-    //        states = null;
-    //    }
+    public void removeStates()
+    {
+        if( !this.currentStateName.equals( NON_STATE ) )
+            restore();
+        states = null;
+    }
 
     @Override
     public String getCompleteNameInDiagram()

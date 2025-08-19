@@ -651,11 +651,9 @@ public class DefaultSemanticController implements SemanticController
     {
         Diagram diagram = Diagram.getDiagram( compartment );
 
-        //TODO: commented State, old code uncommented
-        Set<String> names = diagram.recursiveStream().map( de -> de.getName() ).toSet(); //names of all current elements inside the diagram
-
-        //        Set<String> names = new HashSet<>();
-        //        diagram.states().flatCollection( state -> state.getStateUndoManager().getEdits() ).forEach( edit->fillAddedElementNames(edit, names) ); //names of all the elements added by all states of the diagram
+        //Set<String> names = diagram.recursiveStream().map( de -> de.getName() ).toSet(); //names of all current elements inside the diagram
+        Set<String> names = new HashSet<>();
+        diagram.states().flatCollection( state -> state.getStateUndoManager().getEdits() ).forEach( edit -> fillAddedElementNames( edit, names ) ); //names of all the elements added by all states of the diagram
 
         int index = 1;
         
@@ -711,13 +709,11 @@ public class DefaultSemanticController implements SemanticController
     {
         if( compartment.contains( id ) )
             return false;
-        //TODO: commented State
-        //        if( compartment instanceof Diagram )
-        //        {
-        //            if( ( (Diagram)compartment ).states().flatCollection( state -> state.getStateUndoManager().getEdits() )
-        //                    .anyMatch( edit -> !isNameUnique( edit, id ) ) )
-        //                return false;
-        //        }
+        if( compartment instanceof Diagram )
+        {
+            if( ((Diagram) compartment).states().flatCollection( state -> state.getStateUndoManager().getEdits() ).anyMatch( edit -> !isNameUnique( edit, id ) ) )
+                return false;
+        }
 
         if( !includeSubCompartments )
             return true;

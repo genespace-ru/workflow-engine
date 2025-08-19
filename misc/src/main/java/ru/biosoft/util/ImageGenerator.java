@@ -1,4 +1,4 @@
-package biouml.model.util;
+package ru.biosoft.util;
 
 import java.awt.Color;
 import java.awt.Graphics;

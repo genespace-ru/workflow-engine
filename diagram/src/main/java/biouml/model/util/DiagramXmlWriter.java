@@ -35,6 +35,7 @@ import biouml.model.EquivalentNodeGroup;
 //import biouml.model.ModelDefinition;
 import biouml.model.Node;
 import biouml.model.Role;
+import biouml.model.state.StateXmlSerializer;
 //import biouml.model.SubDiagram;
 //import biouml.model.dynamics.Connection;
 //import biouml.model.dynamics.DirectedConnection;
@@ -439,7 +440,7 @@ public class DiagramXmlWriter extends DiagramXmlSupport implements DiagramWriter
         //ModelXmlWriter modelWriter = getModelWriter();
         //modelWriter.setNewPaths( replacements );
         //doc.appendChild( createDml( createDiagram(), modelWriter.createModel( diagram, doc ) , createStates() ) );
-        doc.appendChild( createDml( createDiagram(), null, null ) );
+        doc.appendChild( createDml( createDiagram(), null, createStates() ) );
         return doc;
     }
 
@@ -838,17 +839,16 @@ public class DiagramXmlWriter extends DiagramXmlSupport implements DiagramWriter
         return element;
     }
 
-    //TODO: commented State
-    //    protected Element createStates()
-    //    {
-    //        Element[] states = StateXmlSerializer.getXmlElements( diagram, doc, this );
-    //        if( states == null )
-    //            return null;
-    //        Element element = doc.createElement( STATES_ELEMENT );
-    //        for( Element state : states )
-    //            element.appendChild( state );
-    //        return element;
-    //    }
+    protected Element createStates()
+    {
+        Element[] states = StateXmlSerializer.getXmlElements( diagram, doc, this );
+        if( states == null )
+            return null;
+        Element element = doc.createElement( STATES_ELEMENT );
+        for ( Element state : states )
+            element.appendChild( state );
+        return element;
+    }
 
     private void setKernelRef(Element element, DiagramElement diagramElement)
     {
