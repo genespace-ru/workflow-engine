@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<dml appVersion="0.7.7" version="0.7.7">
+  <diagram diagramType="biouml.plugins.wdl.diagram.WDLDiagramType" title="scatter">
+    <diagramInfo title="scatter">
+      <property name="VERSION" short-description="VERSION" type="String" value="1.0"/>
+    </diagramInfo>
+    <viewOptions>
+      <propertyRef name="nameInParent"/>
+      <propertyRef name="parent" type="com.developmentontheedge.beans.Option">
+        <property name="nameInParent" short-description="nameInParent" type="String"/>
+        <property name="notificationEnabled" short-description="notificationEnabled" type="boolean" value="true"/>
+        <property name="propagationEnabled" short-description="propagationEnabled" type="boolean" value="true"/>
+      </propertyRef>
+      <propertyRef name="pathLayouter"/>
+      <propertyRef name="pathLayouterWrapper" type="ru.biosoft.graph.PathLayouterWrapper">
+        <propertyRef name="pathLayouter"/>
+        <propertyRef name="pathLayouterOptions"/>
+      </propertyRef>
+      <propertyRef name="progressFont"/>
+      <propertyRef elementType="biouml.model.DiagramElementStyleDeclaration" name="styles" type="array"/>
+    </viewOptions>
+    <nodes>
+      <compartment>
+        <compartmentInfo height="50" isTitleHidden="false" kernel="stub/Call_ask_how_are_you" kernel_type="Call" shape="0" title="ask_how_are_you" width="200" x="390" y="300"/>
+        <nodes>
+          <node fixed="true" height="0" isTitleHidden="false" kernel="stub/Call_ask_how_are_you/greeting_file" kernel_type="Input" title="greeting_file" width="0" x="392" y="308">
+            <property name="EXPRESSION" short-description="EXPRESSION" type="String" value="say_hello.greeting_file"/>
+            <property name="NAME" short-description="NAME" type="String" value="greeting_file"/>
+            <property name="TYPE" short-description="TYPE" type="String" value="File"/>
+            <property name="position" short-description="position" type="int" value="0"/>
+          </node>
+          <node fixed="true" height="0" isTitleHidden="false" kernel="stub/Call_ask_how_are_you/output" kernel_type="Output" title="output" width="0" x="572" y="308">
+            <property name="EXPRESSION" short-description="EXPRESSION" type="String" value="&quot;message.txt&quot;"/>
+            <property name="NAME" short-description="NAME" type="String" value="message_file"/>
+            <property name="TYPE" short-description="TYPE" type="String" value="File"/>
+            <property name="position" short-description="position" type="int" value="0"/>
+          </node>
+        </nodes>
+        <edges/>
+        <property name="CALL_NAME" short-description="CALL_NAME" type="String" value="ask_how_are_you"/>
+        <property name="TASK_REFERENCE" short-description="TASK_REFERENCE" type="String" value="ask_how_are_you"/>
+        <property name="innerNodesPortFinder" short-description="innerNodesPortFinder" type="boolean" value="true"/>
+      </compartment>
+      <compartment>
+        <compartmentInfo height="50" isTitleHidden="false" kernel="stub/Call_ask_none" kernel_type="Call" shape="0" title="ask_none" width="200" x="641" y="300"/>
+        <nodes>
+          <node fixed="true" height="0" isTitleHidden="false" kernel="stub/Call_ask_none/input_file" kernel_type="Input" title="input_file" width="0" x="643" y="308">
+            <property name="EXPRESSION" short-description="EXPRESSION" type="String" value="ask_how_are_you.message_file"/>
+            <property name="NAME" short-description="NAME" type="String" value="input_file"/>
+            <property name="TYPE" short-description="TYPE" type="String" value="File"/>
+            <property name="position" short-description="position" type="int" value="0"/>
+          </node>
+          <node fixed="true" height="0" isTitleHidden="false" kernel="stub/Call_ask_none/output_1" kernel_type="Output" title="output_1" width="0" x="823" y="308">
+            <property name="EXPRESSION" short-description="EXPRESSION" type="String" value="&quot;message.txt&quot;"/>
+            <property name="NAME" short-description="NAME" type="String" value="message_file"/>
+            <property name="TYPE" short-description="TYPE" type="String" value="File"/>
+            <property name="position" short-description="position" type="int" value="0"/>
+          </node>
+        </nodes>
+        <edges/>
+        <property name="CALL_NAME" short-description="CALL_NAME" type="String" value="ask_none"/>
+        <property name="TASK_REFERENCE" short-description="TASK_REFERENCE" type="String" value="ask_none"/>
+        <property name="innerNodesPortFinder" short-description="innerNodesPortFinder" type="boolean" value="true"/>
+      </compartment>
+      <compartment>
+        <compartmentInfo height="50" isTitleHidden="false" kernel="stub/Call_say_hello" kernel_type="Call" shape="0" title="say_hello" width="200" x="139" y="300"/>
+        <nodes>
+          <node fixed="true" height="0" isTitleHidden="false" kernel="stub/Call_say_hello/name" kernel_type="Input" title="name" width="0" x="141" y="308">
+            <property name="EXPRESSION" short-description="EXPRESSION" type="String" value="person_name"/>
+            <property name="NAME" short-description="NAME" type="String" value="name"/>
+            <property name="TYPE" short-description="TYPE" type="String" value="String"/>
+            <property name="position" short-description="position" type="int" value="0"/>
+          </node>
+          <node fixed="true" height="0" isTitleHidden="false" kernel="stub/Call_say_hello/output_2" kernel_type="Output" title="output_2" width="0" x="321" y="308">
+            <property name="EXPRESSION" short-description="EXPRESSION" type="String" value="&quot;greeting.txt&quot;"/>
+            <property name="NAME" short-description="NAME" type="String" value="greeting_file"/>
+            <property name="TYPE" short-description="TYPE" type="String" value="File"/>
+            <property name="position" short-description="position" type="int" value="0"/>
+          </node>
+        </nodes>
+        <edges/>
+        <property name="CALL_NAME" short-description="CALL_NAME" type="String" value="say_hello"/>
+        <property name="TASK_REFERENCE" short-description="TASK_REFERENCE" type="String" value="say_hello"/>
+        <property name="innerNodesPortFinder" short-description="innerNodesPortFinder" type="boolean" value="true"/>
+      </compartment>
+      <compartment>
+        <compartmentInfo height="50" isTitleHidden="false" kernel="stub/ask_how_are_you" kernel_type="Task" shape="0" title="ask_how_are_you" width="200" x="0" y="200"/>
+        <nodes>
+          <node fixed="true" height="0" isTitleHidden="false" kernel="stub/ask_how_are_you/input" kernel_type="Input" title="input" width="0" x="2" y="208">
+            <property name="EXPRESSION" short-description="EXPRESSION" type="String"/>
+            <property name="NAME" short-description="NAME" type="String" value="greeting_file"/>
+            <property name="TYPE" short-description="TYPE" type="String" value="File"/>
+            <property name="position" short-description="position" type="int" value="0"/>
+          </node>
+          <node fixed="true" height="0" isTitleHidden="false" kernel="stub/ask_how_are_you/output" kernel_type="Output" title="output" width="0" x="182" y="208">
+            <property name="EXPRESSION" short-description="EXPRESSION" type="String" value="&quot;message.txt&quot;"/>
+            <property name="NAME" short-description="NAME" type="String" value="message_file"/>
+            <property name="TYPE" short-description="TYPE" type="String" value="File"/>
+            <property name="position" short-description="position" type="int" value="0"/>
+          </node>
+        </nodes>
+        <edges/>
+        <property elementType="biouml.plugins.wdl.Declaration" name="BEFORE_COMMAND" short-description="BEFORE_COMMAND" type="array"/>
+        <property name="COMMAND" short-description="COMMAND" type="String" value="&#10;     # Read greeting, append question, write to message.txt&#10;    cat ~{greeting_file} &gt; message.txt&#10;    echo &quot; How are you?&quot; &gt;&gt; message.txt&#10;  "/>
+        <property elementType="String" name="RUNTIME" short-description="RUNTIME" type="array"/>
+        <property name="innerNodesPortFinder" short-description="innerNodesPortFinder" type="boolean" value="true"/>
+      </compartment>
+      <compartment>
+        <compartmentInfo height="50" isTitleHidden="false" kernel="stub/ask_none" kernel_type="Task" shape="0" title="ask_none" width="200" x="0" y="100"/>
+        <nodes>
+          <node fixed="true" height="0" isTitleHidden="false" kernel="stub/ask_none/input_1" kernel_type="Input" title="input_1" width="0" x="2" y="108">
+            <property name="EXPRESSION" short-description="EXPRESSION" type="String"/>
+            <property name="NAME" short-description="NAME" type="String" value="input_file"/>
+            <property name="TYPE" short-description="TYPE" type="String" value="File"/>
+            <property name="position" short-description="position" type="int" value="0"/>
+          </node>
+          <node fixed="true" height="0" isTitleHidden="false" kernel="stub/ask_none/output_1" kernel_type="Output" title="output_1" width="0" x="182" y="108">
+            <property name="EXPRESSION" short-description="EXPRESSION" type="String" value="&quot;message.txt&quot;"/>
+            <property name="NAME" short-description="NAME" type="String" value="message_file"/>
+            <property name="TYPE" short-description="TYPE" type="String" value="File"/>
+            <property name="position" short-description="position" type="int" value="0"/>
+          </node>
+        </nodes>
+        <edges/>
+        <property elementType="biouml.plugins.wdl.Declaration" name="BEFORE_COMMAND" short-description="BEFORE_COMMAND" type="array"/>
+        <property name="COMMAND" short-description="COMMAND" type="String" value="&#10;     # Write to message.txt&#10;    echo &quot; Nothing&quot; &gt;&gt; message.txt&#10;  "/>
+        <property elementType="String" name="RUNTIME" short-description="RUNTIME" type="array"/>
+        <property name="innerNodesPortFinder" short-description="innerNodesPortFinder" type="boolean" value="true"/>
+      </compartment>
+      <node height="60" isTitleHidden="false" kernel="stub/final_message2" kernel_type="Expression" title="final_message2" width="80" x="892" y="315">
+        <property name="EXPRESSION" short-description="EXPRESSION" type="String" value="ask_none.message_file"/>
+        <property name="NAME" short-description="NAME" type="String" value="final_message2"/>
+        <property name="TYPE" short-description="TYPE" type="String" value="File"/>
+      </node>
+      <node height="60" isTitleHidden="false" kernel="stub/person_name" kernel_type="External_parameter" title="person_name" width="80" x="0" y="315">
+        <property name="EXPRESSION" short-description="EXPRESSION" type="String"/>
+        <property name="NAME" short-description="NAME" type="String" value="person_name"/>
+        <property name="TYPE" short-description="TYPE" type="String" value="String"/>
+        <property name="position" short-description="position" type="int" value="0"/>
+      </node>
+      <compartment>
+        <compartmentInfo height="50" isTitleHidden="false" kernel="stub/say_hello" kernel_type="Task" shape="0" title="say_hello" width="200" x="0" y="0"/>
+        <nodes>
+          <node fixed="true" height="0" isTitleHidden="false" kernel="stub/say_hello/input_2" kernel_type="Input" title="input_2" width="0" x="2" y="8">
+            <property name="EXPRESSION" short-description="EXPRESSION" type="String"/>
+            <property name="NAME" short-description="NAME" type="String" value="name"/>
+            <property name="TYPE" short-description="TYPE" type="String" value="String"/>
+            <property name="position" short-description="position" type="int" value="0"/>
+          </node>
+          <node fixed="true" height="0" isTitleHidden="false" kernel="stub/say_hello/output_2" kernel_type="Output" title="output_2" width="0" x="182" y="8">
+            <property name="EXPRESSION" short-description="EXPRESSION" type="String" value="&quot;greeting.txt&quot;"/>
+            <property name="NAME" short-description="NAME" type="String" value="greeting_file"/>
+            <property name="TYPE" short-description="TYPE" type="String" value="File"/>
+            <property name="position" short-description="position" type="int" value="0"/>
+          </node>
+        </nodes>
+        <edges/>
+        <property elementType="biouml.plugins.wdl.Declaration" name="BEFORE_COMMAND" short-description="BEFORE_COMMAND" type="array"/>
+        <property name="COMMAND" short-description="COMMAND" type="String" value="&#10;     echo &quot;Hello, ~{name}!&quot; &gt; greeting.txt&#10;  "/>
+        <property elementType="String" name="RUNTIME" short-description="RUNTIME" type="array"/>
+        <property name="innerNodesPortFinder" short-description="innerNodesPortFinder" type="boolean" value="true"/>
+      </compartment>
+    </nodes>
+    <edges>
+      <edge edgeID="output_1_to_final_message2" in="Call_ask_none/output_1" inPort="841;316" kernel="stub/output_1_to_final_message2" kernel_type="Link" out="final_message2" outPort="892;325" title="output_1_to_final_message2">
+        <path>
+          <segment segmentType="moveTo" x0="841" y0="316"/>
+          <segment segmentType="lineTo" x0="853" y0="316"/>
+          <segment segmentType="cubic" x0="872" y0="316"/>
+          <segment segmentType="lineTo" x0="861" y0="325"/>
+          <segment segmentType="lineTo" x0="880" y0="325"/>
+          <segment segmentType="lineTo" x0="892" y0="325"/>
+        </path>
+      </edge>
+      <edge edgeID="output_2_to_greeting_file" in="Call_say_hello/output_2" inPort="339;316" kernel="stub/output_2_to_greeting_file" kernel_type="Link" out="Call_ask_how_are_you/greeting_file" outPort="390;316" title="output_2_to_greeting_file"/>
+      <edge edgeID="output_to_input_file" in="Call_ask_how_are_you/output" inPort="590;316" kernel="stub/output_to_input_file" kernel_type="Link" out="Call_ask_none/input_file" outPort="641;316" title="output_to_input_file"/>
+      <edge edgeID="person_name_to_name" in="person_name" inPort="88;325" kernel="stub/person_name_to_name" kernel_type="Link" out="Call_say_hello/name" outPort="139;316" title="person_name_to_name">
+        <path>
+          <segment segmentType="moveTo" x0="88" y0="325"/>
+          <segment segmentType="lineTo" x0="100" y0="325"/>
+          <segment segmentType="cubic" x0="119" y0="325"/>
+          <segment segmentType="lineTo" x0="108" y0="316"/>
+          <segment segmentType="lineTo" x0="127" y0="316"/>
+          <segment segmentType="lineTo" x0="139" y0="316"/>
+        </path>
+      </edge>
+    </edges>
+    <filters elementType="biouml.model.DiagramFilter" type="[Lbiouml.model.DiagramFilter;"/>
+  </diagram>
+</dml>

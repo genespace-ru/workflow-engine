@@ -1,5 +1,16 @@
 files:
 - name: scatter_1
+  type: Text
+  properties:
+    cloneForEdit: 'true'
+    diagramType: biouml.plugins.wdl.diagram.WDLDiagramType
+- name: scatter_3
+  type: BioUML diagram
+- name: scatter_5
+  properties:
+    cloneForEdit: 'true'
+    diagramType: biouml.plugins.wdl.diagram.WDLDiagramType
+  transformer: biouml.model.util.DiagramXmlTransformer
   type: BioUML diagram
 properties:
   root: 'true'
