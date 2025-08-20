@@ -8,6 +8,8 @@ import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.security.InvalidParameterException;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -55,11 +57,10 @@ public class WDLRunner
 
         generateFunctions( outputDir );
 
-        for ( DataElement de : StreamEx.of( WDLUtil.getImports( diagram ) ).map( f -> f.getSource().getDataElement() ) )
-            WDLUtil.export( de, new File( outputDir ) );
+        exportIncludes( diagram, outputDir );
 
         if( nextFlowScript == null )
-            nextFlowScript = new NextFlowGenerator().generateNextFlow( diagram );
+            nextFlowScript = new NextFlowGenerator().generateNextFlow( diagram, true );
         NextFlowPreprocessor preprocessor = new NextFlowPreprocessor();
         nextFlowScript = preprocessor.preprocess( nextFlowScript );
 
@@ -81,57 +82,64 @@ public class WDLRunner
 
         Process process = builder.start();
 
-        new Thread( new Runnable()
-        {
-            public void run()
-            {
-                BufferedReader input = new BufferedReader( new InputStreamReader( process.getInputStream() ) );
-                String line = null;
-
-                try
-                {
-                    while ( (line = input.readLine()) != null )
-                        log.info( line );
-                }
-                catch (IOException e)
-                {
-                    e.printStackTrace();
-                }
-                //                
-                //for some reason cwl-runner outputs everything into error stream
-                BufferedReader err = new BufferedReader( new InputStreamReader( process.getErrorStream() ) );
-                line = null;
-
-                try
-                {
-                    while ( (line = err.readLine()) != null )
-                        log.info( line );
-                }
-                catch (IOException e)
-                {
-                    e.printStackTrace();
-                }
-            }
-        } ).start();
-
-        process.waitFor();
-
-        importResults( diagram, settings, outputDir );
-        //        StreamGobbler inputReader = new StreamGobbler( process.getInputStream(), true );
-        //        StreamGobbler errorReader = new StreamGobbler( process.getErrorStream(), true );
+        //        new Thread( new Runnable()
+        //        {
+        //            public void run()
+        //            {
+        //                BufferedReader input = new BufferedReader( new InputStreamReader( process.getInputStream() ) );
+        //                String line = null;
+        //
+        //                try
+        //                {
+        //                    while ( (line = input.readLine()) != null )
+        //                        log.info( line );
+        //                }
+        //                catch (IOException e)
+        //                {
+        //                    e.printStackTrace();
+        //                }
+        //                //                
+        //                //for some reason cwl-runner outputs everything into error stream
+        //                BufferedReader err = new BufferedReader( new InputStreamReader( process.getErrorStream() ) );
+        //                line = null;
+        //
+        //                try
+        //                {
+        //                    while ( (line = err.readLine()) != null )
+        //                        log.info( line );
+        //                }
+        //                catch (IOException e)
+        //                {
+        //                    e.printStackTrace();
+        //                }
+        //            }
+        //        } ).start();
+        //
         //        process.waitFor();
 
-        //        if( process.exitValue() == 0 )
-        //        {
-        //            log.log( Level.INFO, inputReader.getData() );
-        //            importResults( diagram, settings, outputDir );
-        //
-        //        }
-        //        else
-        //        {
-        //            String errorStr = errorReader.getData();
-        //            throw new Exception( "Nextflow executed with error: " + errorStr );
-        //        }
+        //importResults( diagram, settings, outputDir );
+        StreamGobbler inputReader = new StreamGobbler( process.getInputStream(), true );
+        StreamGobbler errorReader = new StreamGobbler( process.getErrorStream(), true );
+        process.waitFor();
+
+        if( process.exitValue() == 0 )
+        {
+            String outStr = inputReader.getData();
+            if( !outStr.isEmpty() )
+                log.info( outStr );
+            //for some reason cwl-runner outputs everything into error stream
+            String errorStr = errorReader.getData();
+            if( !errorStr.isEmpty() )
+                log.info( errorStr );
+            importResults( diagram, settings, outputDir );
+        }
+        else
+        {
+            //for some reason cwl-runner outputs everything into error stream
+            String errorStr = errorReader.getData();
+            log.info( errorStr );
+            throw new Exception( "Nextflow executed with error: " + errorStr );
+        }
 
     }
 
@@ -143,6 +151,13 @@ public class WDLRunner
 
         for ( Compartment n : WDLUtil.getAllCalls( diagram ) )
         {
+            if( WDLUtil.getDiagramRef( n ) != null )
+            {
+                String ref = WDLUtil.getDiagramRef( n );
+                Diagram externalDiagram = (Diagram) diagram.getOrigin().get( ref );
+                importResults( externalDiagram, settings, outputDir );
+                continue;
+            }
             String taskRef = WDLUtil.getTaskRef( n );
             String folderName = (taskRef);
             File folder = new File( outputDir, folderName );
@@ -158,6 +173,22 @@ public class WDLRunner
                 nested.put( new TextDataElement( f.getName(), nested, data ) );
             }
         }
+    }
+
+    public static void exportIncludes(Diagram diagram, String outputDir) throws Exception
+    {
+        for ( Diagram d : getIncludes( diagram ) )
+            WDLUtil.export( d, new File( outputDir ) );
+    }
+
+    public static Set<Diagram> getIncludes(Diagram diagram)
+    {
+        Set<Diagram> result = StreamEx.of( WDLUtil.getImports( diagram ) ).map( f -> f.getSource().getDataElement() ).select( Diagram.class ).toSet();
+        Set<Diagram> additionals = new HashSet<Diagram>();
+        for ( Diagram d : result )
+            additionals.addAll( getIncludes( d ) );
+        result.addAll( additionals );
+        return result;
     }
 
 }

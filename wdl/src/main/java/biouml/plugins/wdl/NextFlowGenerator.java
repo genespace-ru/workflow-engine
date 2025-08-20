@@ -22,7 +22,7 @@ public class NextFlowGenerator
     protected static String TEMPLATE_PATH = "resources/nextflow.vm";
     private Template velocityTemplate;
 
-    public String generateNextFlow(Diagram diagram) throws Exception
+    public String generateNextFlow(Diagram diagram, boolean isEntry) throws Exception
     {
         try
         {
@@ -43,7 +43,7 @@ public class NextFlowGenerator
             }
             VelocityContext context = new VelocityContext();
 
-            context.put( "helper", new NextFlowVelocityHelper( diagram ) );
+            context.put( "helper", new NextFlowVelocityHelper( diagram, isEntry ) );
 
             //Creation time
             String pattern = "yyyy.MM.dd HH:mm:ss";
@@ -57,7 +57,13 @@ public class NextFlowGenerator
 
             StringWriter sw = new StringWriter();
             velocityTemplate.merge( context, sw );
-            return sw.toString();
+
+            String result = sw.toString();
+
+            result = result.replace( "$(", "\\$(" );
+            result = result.replace( "~{", "${" );
+
+            return result;
         }
         catch( Exception ex )
         {

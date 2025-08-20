@@ -655,7 +655,7 @@ public class WDLUtil
         else if( de instanceof Diagram )
         {
             NextFlowGenerator generator = new NextFlowGenerator();
-            String nextFlow = generator.generateNextFlow( (Diagram) de );
+            String nextFlow = generator.generateNextFlow( (Diagram) de, false );
             File exported = new File( dir, de.getName() );
             ApplicationUtils.writeString( exported, nextFlow );
         }
@@ -676,7 +676,7 @@ public class WDLUtil
         }
     }
     
-    private static File getElementFile(DataElement de) throws Exception
+    public static File getElementFile(DataElement de) throws Exception
     {
         if( de instanceof FileDataElement )
             return ((FileDataElement) de).getFile();
