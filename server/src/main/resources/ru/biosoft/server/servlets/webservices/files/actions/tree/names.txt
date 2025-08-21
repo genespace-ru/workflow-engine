@@ -1,11 +1,9 @@
-openGenomeBrowser.json
-openSequence.json
+openDiagram.json
 openTable.json
 openFile.json
 openText.json
-openDiagram.json
 expand.json
-newElement.json
+newDiagram.json
 newFolder.json
 import.json:Import
 saveas.json
@@ -13,7 +11,6 @@ copyFolder.json
 removeElement.json
 removeProject.json
 setCurrentProject.json
-openMolecule.json
 editProperties.json
 changeType.json
 gitClone.json:Experimental

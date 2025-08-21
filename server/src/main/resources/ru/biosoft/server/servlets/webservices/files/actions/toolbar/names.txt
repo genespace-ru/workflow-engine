@@ -14,19 +14,3 @@ import.json:Import
 
 undo.json
 redo.json
-
-semanticzoomout.json
-semanticzoomin.json
-
-semanticoverview.json
-semanticdefault.json
-semanticdetailed.json
-
-page_backward.json
-page_forward.json
-shift_backward.json
-shift_forward.json
-
-openastrack.json
-combinetracks.json
-createGCTrack.json

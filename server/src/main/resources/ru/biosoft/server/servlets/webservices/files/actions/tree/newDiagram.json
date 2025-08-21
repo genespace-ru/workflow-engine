@@ -1,0 +1,38 @@
+/*
+ * Create new diagram in Module action
+ */
+{
+    id: "new_diagram",
+    label: "New diagram",
+	icon: "icons/diagram.gif",
+    visible: "function(completePath)
+    {
+		var path = getElementPath(completePath);
+		var name = getElementName(completePath);
+		if(!name) return -1;
+        
+        if(!path)
+        {
+            dc = getDataCollection(completePath);
+            type = dc.getAttributesNoParent()['server-class'];
+        }
+        else
+        {
+            dc = getDataCollection(path);
+            type = dc.getChildClass(name);
+        }
+        permission = dc.getPermission(name);
+        var isMutable = permission & 0x04 == 0x04;
+        if ( isMutable && ((instanceOf(type,'ru.biosoft.access.core.FolderCollection') ) || instanceOf(getDataCollection(completePath).getChildClass(), 'biouml.model.Diagram'))) 
+        {
+            return true;
+        }
+        return -1;
+    }",
+    action: "function(path)
+    {
+        createNewDiagram(path, '', function(name, type){
+                    openDiagram(name);
+            });
+    }"
+}
