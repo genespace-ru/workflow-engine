@@ -13,6 +13,7 @@ import com.developmentontheedge.beans.annot.PropertyName;
 
 import biouml.model.Diagram;
 import biouml.model.Node;
+import ru.biosoft.access.DataCollectionUtils;
 //import ru.biosoft.access.FileExporter;
 import ru.biosoft.access.core.DataCollection;
 import ru.biosoft.access.core.DataElement;
@@ -90,7 +91,7 @@ public class WorkflowSettings extends Option
         if( isUseJson() )
         {
             DataElement de = getJson().getDataElement();
-            File sourceFile = WDLUtil.getElementFile( de );
+            File sourceFile = DataCollectionUtils.getElementFile( de );
             ApplicationUtils.linkOrCopyFile( json, sourceFile, null );
             //FileExporter exporter = new FileExporter();
             //exporter.doExport( de, json );

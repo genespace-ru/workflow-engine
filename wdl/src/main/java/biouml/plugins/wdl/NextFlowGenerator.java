@@ -1,6 +1,5 @@
 package biouml.plugins.wdl;
 
-
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
@@ -26,6 +25,8 @@ public class NextFlowGenerator
     {
         try
         {
+            diagram =  new NextFlowPreprocessor().preprocess( diagram );
+            
             InputStream inputStream = getClass().getResourceAsStream( TEMPLATE_PATH );
 
             if( velocityTemplate == null )
@@ -34,6 +35,7 @@ public class NextFlowGenerator
                 Template template = new Template();
                 template.setName( "Next Flow template" );
                 SimpleNode node = runtimeServices.parse( new InputStreamReader( inputStream ), template );
+                //SimpleNode node = runtimeServices.parse( new InputStreamReader( inputStream ), "Next Flow template" );
                 velocityTemplate = new Template();
                 velocityTemplate.setEncoding( "UTF-8" );
                 velocityTemplate.setRuntimeServices( runtimeServices );
@@ -57,11 +59,11 @@ public class NextFlowGenerator
 
             StringWriter sw = new StringWriter();
             velocityTemplate.merge( context, sw );
-
+            
             String result = sw.toString();
 
-            result = result.replace( "$(", "\\$(" );
-            result = result.replace( "~{", "${" );
+//            result = result.replace( "$(", "\\$(" );
+//            result = result.replace( "~{", "${" );
 
             return result;
         }

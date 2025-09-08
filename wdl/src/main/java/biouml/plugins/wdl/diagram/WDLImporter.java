@@ -8,9 +8,11 @@ import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.logging.Logger;
 
 //import com.developmentontheedge.application.ApplicationUtils;
@@ -49,6 +51,7 @@ import ru.biosoft.access.CollectionFactoryUtils;
 import ru.biosoft.access.core.DataCollection;
 import ru.biosoft.access.core.DataElement;
 import ru.biosoft.access.core.DataElementImporter;
+import ru.biosoft.access.core.DataElementPath;
 import ru.biosoft.access.core.DataElementPutException;
 import ru.biosoft.graph.HierarchicLayouter;
 import ru.biosoft.graph.PathwayLayouter;
@@ -65,7 +68,7 @@ public class WDLImporter implements DataElementImporter
     private Map<String, Diagram> imports = new HashMap<>();
     private Map<String, Compartment> tasks = new HashMap<>();
     private int externalPosition = 0;
-    
+
     @Override
     public int accept(DataCollection<?> parent, File file)
     {
@@ -185,11 +188,11 @@ public class WDLImporter implements DataElementImporter
         diagram.getAttributes().remove( WDLConstants.VERSION_ATTR );
         diagram.getAttributes().remove( WDLConstants.META_ATTR );
         diagram.getAttributes().remove( WDLConstants.PARAMETER_META_ATTR );
-        
+
         externalPosition = 0;
         imports.clear();
         this.tasks.clear();
-        
+
         for( int i = 0; i < start.jjtGetNumChildren(); i++ )
         {
             biouml.plugins.wdl.parser.Node n = start.jjtGetChild( i );
@@ -224,7 +227,7 @@ public class WDLImporter implements DataElementImporter
                     else if( child instanceof AstOutput )
                     {
                         for( AstDeclaration astD : StreamEx.of( ( (AstOutput)child ).getChildren() ).select( AstDeclaration.class ) )
-                            createExpressionNode( diagram, astD );
+                            createOutputNode( diagram, astD );
                     }
                     else if( child instanceof AstDeclaration )
                     {
@@ -256,11 +259,22 @@ public class WDLImporter implements DataElementImporter
 
     public void createImport(Diagram diagram, AstImport astImport) throws Exception
     {
-        Diagram imported = (Diagram)diagram.getOrigin().get( astImport.getSource() );
-        imports.put( astImport.getAlias(), imported );
-        if( imported == null )
-            throw new Exception( "Imported diagram " + astImport.getSource() + " not found!" );
-        WDLUtil.addImport( diagram, imported, astImport.getAlias() );
+        try
+        {
+            DataElementPath dep = diagram.getOrigin().getCompletePath();
+            String path = astImport.getSource();
+            String[] parts = path.split( "/" );
+            DataElementPath importPath = dep.getChildPath( parts );
+            Diagram imported = importPath.getDataElement( Diagram.class );
+            imports.put( astImport.getAlias(), imported );
+            if( imported == null )
+                throw new Exception( "Imported diagram " + astImport.getSource() + " not found!" );
+            WDLUtil.addImport( diagram, imported, astImport.getAlias() );
+        }
+        catch( Exception ex )
+        {
+            log.info( "Can not process import " + astImport.toString() + ": " + ex.getMessage() );
+        }
     }
 
     //    public void createMeta(Diagram diagram, AstMeta astMeta) throws Exception
@@ -299,6 +313,18 @@ public class WDLImporter implements DataElementImporter
     {
         String name = declaration.getName();
         Stub kernel = new Stub( null, name, WDLConstants.EXPRESSION_TYPE );
+        Node node = new Node( parent, name, kernel );
+        setDeclaration( node, declaration );
+        node.setTitle( name );
+        node.setShapeSize( new Dimension( 80, 60 ) );
+        parent.put( node );
+        return node;
+    }
+
+    public Node createOutputNode(Compartment parent, AstDeclaration declaration)
+    {
+        String name = declaration.getName();
+        Stub kernel = new Stub( null, name, WDLConstants.WORKFLOW_OUTPUT_TYPE );
         Node node = new Node( parent, name, kernel );
         setDeclaration( node, declaration );
         node.setTitle( name );
@@ -432,6 +458,7 @@ public class WDLImporter implements DataElementImporter
     {
         Diagram diagram = Diagram.getDiagram( parent );
         String name = call.getName();
+
         Compartment taskСompartment = tasks.get( name );
         String taskRef = name;
         String diagramRef = null;
@@ -444,7 +471,7 @@ public class WDLImporter implements DataElementImporter
             {
                 String[] parts = name.split( "\\." );
                 diagramAlias = parts[0];
-                name = name.replace( ".", "_" );
+                name = parts[1];//name.replace( ".", "_" );
                 taskRef = parts[1];
                 Diagram importedDiagram = imports.get( diagramAlias );
                 diagramRef = importedDiagram.getName();
@@ -469,11 +496,11 @@ public class WDLImporter implements DataElementImporter
         String alias = call.getAlias();
         if( alias != null )
         {
-//            name = alias;
+            //            name = alias;
             title = alias;
         }
 
-        name = DefaultSemanticController.generateUniqueName( diagram, "Call_" + name);
+        name = DefaultSemanticController.generateUniqueName( diagram, "Call_" + name );
         Stub kernel = new Stub( null, name, WDLConstants.CALL_TYPE );
 
         Compartment c = new Compartment( parent, name, kernel );
@@ -495,10 +522,11 @@ public class WDLImporter implements DataElementImporter
         int outputs = 0;
 
         AstSymbol[] inputSymbols = call.getInputs();
-
+        Set<String> addedInputs = new HashSet<>();//TODO: refactor this
         for( AstSymbol symbol : inputSymbols )
         {
             String inputName = symbol.getName();
+            addedInputs.add( inputName );
             String expression = inputName;
             AstExpression expr = null;
             if( symbol.getChildren() != null )
@@ -523,10 +551,11 @@ public class WDLImporter implements DataElementImporter
                     {
                         WDLUtil.setPosition( portNode, WDLUtil.getPosition( node ) );
                         Node inputNode = WDLUtil.getTarget( node );
-                        if( inputNode != null )                          
+                        if( inputNode != null )
                             node = inputNode;
                         WDLUtil.setName( portNode, WDLUtil.getName( node ) );
                         WDLUtil.setType( portNode, WDLUtil.getType( node ) );
+
 
                         WDLUtil.setExpression( portNode, expression );
                     }
@@ -566,13 +595,24 @@ public class WDLImporter implements DataElementImporter
                 WDLUtil.setName( portNode, WDLUtil.getName( node ) );
                 WDLUtil.setType( portNode, WDLUtil.getType( node ) );
                 WDLUtil.setExpression( portNode, WDLUtil.getExpression( node ) );
+                WDLUtil.setPosition( portNode, WDLUtil.getPosition( node ) );
+            }
+            for( Node node : WDLUtil.getExternalParameters( (Diagram)taskСompartment ) )
+            {
+                if( !addedInputs.contains( WDLUtil.getName( node ) ) )
+                {
+                    Node portNode = addPort( node.getName(), WDLConstants.INPUT_TYPE, inputs++, c );
+                    WDLUtil.setName( portNode, WDLUtil.getName( node ) );
+                    WDLUtil.setType( portNode, WDLUtil.getType( node ) );
+                    WDLUtil.setExpression( portNode, WDLUtil.getExpression( node ) );
+                    WDLUtil.setPosition( portNode, WDLUtil.getPosition( node ) );
+                }
             }
         }
         else
         {
             for( Node node : taskСompartment.getNodes() )
             {
-                //            String varName = WDLUtil.getName( node );
                 Node portNode = null;
                 if( WDLConstants.OUTPUT_TYPE.equals( node.getKernel().getType() ) )
                 {
@@ -580,6 +620,15 @@ public class WDLImporter implements DataElementImporter
                     WDLUtil.setName( portNode, WDLUtil.getName( node ) );
                     WDLUtil.setType( portNode, WDLUtil.getType( node ) );
                     WDLUtil.setExpression( portNode, WDLUtil.getExpression( node ) );
+                    //WDLUtil.setPosition( portNode, WDLUtil.getPosition( node ) );
+                }
+                else if( !addedInputs.contains( WDLUtil.getName( node ) ) )
+                {
+                    portNode = addPort( node.getName(), WDLConstants.INPUT_TYPE, inputs++, c );
+                    WDLUtil.setName( portNode, WDLUtil.getName( node ) );
+                    WDLUtil.setType( portNode, WDLUtil.getType( node ) );
+                    //WDLUtil.setExpression( portNode, WDLUtil.getExpression( node ) );
+                    WDLUtil.setPosition( portNode, WDLUtil.getPosition( node ) );
                 }
             }
         }
@@ -614,7 +663,7 @@ public class WDLImporter implements DataElementImporter
         Diagram d = Diagram.getDiagram( input );
         name = DefaultSemanticController.generateUniqueName( d, name );
         Edge e = new Edge( new Stub( null, name, type ), input, output );
-        d.put( e );
+        e.getCompartment().put( e );
         return e;
     }
 
