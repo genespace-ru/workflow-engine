@@ -301,10 +301,10 @@ public class DiagramService extends DiagramProtocol implements Service
             return;
         }
 
-        DataCollection dc = DataElementPath.create(dcName.toString()).getDataCollection();
+        //DataCollection dc = DataElementPath.create(dcName.toString()).getDataCollection();
 
-        Module module = Module.getModule(dc);
-        ModuleType moduleType = module.getType();
+        //Module module = Module.getModule(dc);
+        //ModuleType moduleType = module.getType();
 
         JSONArray diagramTypes = new JSONArray();
         //TODO: diagram types same for all collections
@@ -331,20 +331,31 @@ public class DiagramService extends DiagramProtocol implements Service
 
         DataCollection dc = DataElementPath.create(dcName.toString()).getDataCollection();
 
-        Module module = Module.getModule(dc);
-        Object diagramType = arguments.get(DiagramProtocol.KEY_TYPE);
-        ModuleType moduleType = module.getType();
-
-        DataCollection origin = null;
+        Module module = null;
         try
         {
-            origin = getDiagrams( (Module) module );
+            module = Module.getModule( dc );
         }
-        catch( Exception e )
+        catch (Exception e)
         {
-            connection.error("Can not get Diagram collection in database: " + module.getCompletePath());
         }
-        if( origin == null )
+        Object diagramType = arguments.get(DiagramProtocol.KEY_TYPE);
+        DataCollection origin = null;
+        if( module != null )
+        {
+            try
+            {
+                ModuleType moduleType = module.getType();
+                origin = getDiagrams( (Module) module );
+            }
+            catch (Exception e)
+            {
+                connection.error( "Can not get Diagram collection in database: " + module.getCompletePath() );
+            }
+            if( origin == null )
+                origin = dc;
+        }
+        else
             origin = dc;
         String diagramName = arguments.get(DiagramProtocol.KEY_DIAGRAM).toString();
         try

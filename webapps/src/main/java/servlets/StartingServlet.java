@@ -39,6 +39,7 @@ import ru.biosoft.templates.TemplatesInitializer;
 import ru.biosoft.util.ServerPreferences;
 import biouml.model.DiagramInitializer;
 import biouml.plugins.wdl.WDLInitializer;
+import biouml.model.DiagramTypes;
 
 @WebServlet(urlPatterns = { "/diagrams/*" }, initParams = { @WebInitParam(name = "configPath", value = "config.yml") })
 public class StartingServlet extends HttpServlet
@@ -55,7 +56,7 @@ public class StartingServlet extends HttpServlet
         AccessInitializer.initialize();
         ServerInitializer.initialize();
         DiagramInitializer.initialize();
-        //DiagramTypes.addDiagramType( "biouml.plugins.wdl.diagram.WDLDiagramType" );
+        DiagramTypes.addDiagramType( "biouml.plugins.wdl.diagram.WDLDiagramType" );
         WDLInitializer.initialize();
         TemplatesInitializer.initialize();
 
