@@ -6,9 +6,9 @@ import java.awt.image.BufferedImage;
 import biouml.model.Diagram;
 import biouml.model.DiagramFilter;
 import biouml.model.DiagramViewBuilder;
+import ru.biosoft.graphics.ImageGenerator;
 import ru.biosoft.graphics.View;
 import ru.biosoft.util.ApplicationUtils;
-import ru.biosoft.util.ImageGenerator;
 
 public class DiagramImageGenerator extends ImageGenerator
 {
