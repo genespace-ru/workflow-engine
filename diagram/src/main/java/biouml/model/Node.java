@@ -28,7 +28,7 @@ import ru.biosoft.access.core.DataElementPath;
 import ru.biosoft.access.core.ClassIcon;
 import ru.biosoft.access.core.CloneableDataElement;
 import ru.biosoft.graphics.View;
-import ru.biosoft.util.DimensionEx;
+import biouml.standard.type.DimensionEx;
 
 /**
  * Diagram node element

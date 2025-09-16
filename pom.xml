@@ -9,7 +9,6 @@
  <packaging>pom</packaging>
 
  <modules>
-  <module>misc</module>
   <module>server</module>
   <module>diagram</module>
   <module>wdl</module>

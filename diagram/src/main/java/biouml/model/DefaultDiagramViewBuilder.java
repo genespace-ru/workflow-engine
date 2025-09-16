@@ -48,7 +48,7 @@ import ru.biosoft.graphics.TextView;
 import ru.biosoft.graphics.View;
 import ru.biosoft.graphics.font.ColorFont;
 import ru.biosoft.util.ApplicationUtils;
-import ru.biosoft.util.DimensionEx;
+import biouml.standard.type.DimensionEx;
 
 /**
  * Default implementation of <code>DiagramViewBuilder</code>.

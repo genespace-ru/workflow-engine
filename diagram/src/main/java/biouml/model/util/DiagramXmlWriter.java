@@ -65,7 +65,7 @@ import ru.biosoft.graph.Layouter;
 import ru.biosoft.graph.Path;
 import ru.biosoft.util.ColorUtils;
 import ru.biosoft.util.DPSUtils;
-import ru.biosoft.util.DimensionEx;
+import biouml.standard.type.DimensionEx;
 import ru.biosoft.util.TextUtil2;
 
 public class DiagramXmlWriter extends DiagramXmlSupport implements DiagramWriter

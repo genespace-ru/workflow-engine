@@ -33,12 +33,12 @@ import ru.biosoft.exception.LoggedClassCastException;
 import ru.biosoft.access.core.ClassIcon;
 import com.developmentontheedge.beans.DPSProperties;
 
-import ru.biosoft.util.DimensionEx;
 import ru.biosoft.util.TextUtil2;
 
 import com.developmentontheedge.beans.annot.PropertyDescription;
 import com.developmentontheedge.beans.annot.PropertyName;
 import biouml.standard.type.Base;
+import biouml.standard.type.DimensionEx;
 
 
 /**
