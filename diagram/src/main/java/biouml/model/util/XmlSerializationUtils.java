@@ -26,7 +26,7 @@ import java.util.logging.Logger;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
-import ru.biosoft.access.ClassLoading;
+import ru.biosoft.access.core.Environment;
 import ru.biosoft.access.core.DataElementPath;
 import ru.biosoft.exception.LoggedClassNotFoundException;
 import ru.biosoft.graphics.Brush;
@@ -111,7 +111,7 @@ public class XmlSerializationUtils extends DiagramXmlConstants
         {
             try
             {
-                clazz = ClassLoading.loadClass( typeName );
+                clazz = Environment.loadClass( typeName );
             }
             catch( LoggedClassNotFoundException e1 )
             {

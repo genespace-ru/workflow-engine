@@ -25,9 +25,9 @@ import biouml.model.Node;
 import biouml.model.graph.InOutFinder;
 import biouml.standard.type.Type;
 //import biouml.workbench.graph.InOutFinder;
-import ru.biosoft.access.ClassLoading;
 import ru.biosoft.access.core.DataCollectionConfigConstants;
 import ru.biosoft.access.core.DataElementPath;
+import ru.biosoft.access.core.Environment;
 import ru.biosoft.access.repository.IconFactory;
 //import ru.biosoft.analysiscore.AnalysisDPSUtils;
 //import ru.biosoft.analysiscore.AnalysisMethod;
@@ -243,7 +243,7 @@ public class WDLViewBuilder extends DefaultDiagramViewBuilder
             iconId = null;
 
         if( iconId == null || iconId.isEmpty() )
-            iconId = ClassLoading.getResourceLocation( getClass(), "resources/default-connector.gif" );
+            iconId = Environment.getResourceLocation( getClass(), "resources/default-connector.gif" );
         
 //        String iconName = null;
 //        switch( WDLUtil.getType( node ) )

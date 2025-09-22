@@ -96,7 +96,7 @@ import biouml.standard.type.Type;
 //import biouml.workbench.graphsearch.SearchElement;
 //import one.util.streamex.StreamEx;
 import ru.biosoft.access.BeanRegistry;
-import ru.biosoft.access.ClassLoading;
+import ru.biosoft.access.core.Environment;
 import ru.biosoft.access.biohub.Element;
 import ru.biosoft.access.core.CollectionFactory;
 import ru.biosoft.access.core.DataCollection;
@@ -1470,7 +1470,7 @@ public class WebDiagramsProvider extends WebProviderSupport
             Class<?> typeClass = null;
             try
             {
-                typeClass = ClassLoading.loadClass( typeStr );
+                typeClass = Environment.loadClass( typeStr );
             }
             catch( LoggedClassNotFoundException e )
             {
@@ -1634,7 +1634,7 @@ public class WebDiagramsProvider extends WebProviderSupport
         Class<?> typeClass = null;
         try
         {
-            typeClass = ClassLoading.loadClass( typeStr );
+            typeClass = Environment.loadClass( typeStr );
         }
         catch( LoggedClassNotFoundException e )
         {
@@ -1756,7 +1756,7 @@ public class WebDiagramsProvider extends WebProviderSupport
 
         try
         {
-            Class<?> typeClass = ClassLoading.loadClass( typeStr, properties.getProperty(DataCollectionConfigConstants.PLUGINS_PROPERTY) );
+            Class<?> typeClass = Environment.loadClass( typeStr, properties.getProperty(DataCollectionConfigConstants.PLUGINS_PROPERTY) );
             if( typeClass == Stub.NoteLink.class )
             {
                 kernel = new Stub.NoteLink(null, name);
@@ -2368,7 +2368,7 @@ public class WebDiagramsProvider extends WebProviderSupport
         //                        if( name.contains("/") )
         //                            name = name.substring(name.lastIndexOf("/") + 1, name.length());
         //                        String className = fields[5];
-        //                        Class<? extends DataElement> clazz = ClassLoading.loadSubClass(className, DataElement.class);
+        //                        Class<? extends DataElement> clazz = Environment.loadClass(className, DataElement.class);
         //                        de = clazz.getConstructor(DataCollection.class, String.class).newInstance(null, name);
         //                    }
         //                    catch( Exception ex )
@@ -2551,17 +2551,17 @@ public class WebDiagramsProvider extends WebProviderSupport
             {
                 diagram = (Diagram)diagramObj;
             }
-            if( diagram == null )
-            {
-                try
-                {
-                    diagram = (Diagram)WebJob.getJobData(completeName);
-                }
-                catch(Throwable t)
-                {
-                    log.log(Level.SEVERE, "Can not getJobData for diagram=" + completeName, t);
-                }
-            }
+            //            if( diagram == null )
+            //            {
+            //                try
+            //                {
+            //                    diagram = (Diagram)WebJob.getJobData(completeName);
+            //                }
+            //                catch(Throwable t)
+            //                {
+            //                    log.log(Level.SEVERE, "Can not getJobData for diagram=" + completeName, t);
+            //                }
+            //            }
         }
 
         if ( diagram == null || !needView || diagram.getView() != null )
@@ -2611,16 +2611,17 @@ public class WebDiagramsProvider extends WebProviderSupport
             {
                 diagram = (Diagram)diagramObj;
             }
-            if( diagram == null )
-            {
-                try
-                {
-                    diagram = (Diagram)WebJob.getJobData(completeName);
-                }
-                catch( Exception e )
-                {
-                }
-            }
+            //TODO: commented get from WebJob
+            //            if( diagram == null )
+            //            {
+            //                try
+            //                {
+            //                    diagram = (Diagram)WebJob.getJobData(completeName);
+            //                }
+            //                catch( Exception e )
+            //                {
+            //                }
+            //            }
         }
         if( !needView )
             return diagram;
@@ -2645,7 +2646,7 @@ public class WebDiagramsProvider extends WebProviderSupport
                                 try
                                 {
                                     String pluginNames = info.getProperty(DataCollectionConfigConstants.PLUGINS_PROPERTY);
-                                    Class<? extends Layouter> layouterClass = ClassLoading.loadSubClass( layouterName, pluginNames, Layouter.class );
+                                    Class<? extends Layouter> layouterClass = Environment.loadClass( layouterName, pluginNames, Layouter.class );
                                     diagram.setPathLayouter(layouterClass.newInstance());
                                 }
                                 catch( Throwable t )

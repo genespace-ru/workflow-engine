@@ -80,7 +80,7 @@ import biouml.standard.type.Stub.PlotElement;
 import biouml.standard.type.Type;
 import biouml.standard.type.DiagramInfo.AuthorInfo;
 import one.util.streamex.StreamEx;
-import ru.biosoft.access.ClassLoading;
+import ru.biosoft.access.core.Environment;
 import ru.biosoft.access.core.CollectionFactory;
 import ru.biosoft.access.core.DataCollection;
 import ru.biosoft.access.core.DataCollectionConfigConstants;
@@ -180,7 +180,7 @@ public class DiagramXmlReader extends DiagramXmlSupport implements DiagramReader
         {
             try
             {
-                clazz = ClassLoading.loadClass( type );
+                clazz = Environment.loadClass( type );
             }
             catch( LoggedClassNotFoundException e1 )
             {
@@ -235,7 +235,7 @@ public class DiagramXmlReader extends DiagramXmlSupport implements DiagramReader
             String className = element.getAttribute(TYPE_ATTR);
             if( !className.isEmpty() )
             {
-                Class<?> clazz = ClassLoading.loadClass(className);
+                Class<?> clazz = Environment.loadClass(className);
                 Object object = clazz.newInstance();
                 DynamicPropertySet dps = readDPS(element, null);
                 DPSUtils.readBeanFromDPS(object, dps, "");
@@ -665,7 +665,7 @@ public class DiagramXmlReader extends DiagramXmlSupport implements DiagramReader
         //        Connection role;
         //        try
         //        {
-        //            Class<? extends Connection> connectionClass = ClassLoading.loadSubClass( type, null, Connection.class );
+        //            Class<? extends Connection> connectionClass = Environment.loadClass( type, null, Connection.class );
         //            role = connectionClass.getConstructor( Edge.class ).newInstance( edge );
         //        }
         //        catch( Throwable t )
@@ -1087,8 +1087,8 @@ public class DiagramXmlReader extends DiagramXmlSupport implements DiagramReader
             if( origin != null )
                 pluginNames = origin.getInfo().getProperties().getProperty(DataCollectionConfigConstants.PLUGINS_PROPERTY);
 
-            String pluginForClass = ClassLoading.getPluginForClass(type);
-            return ClassLoading.loadSubClass( type, pluginForClass == null ? pluginNames : pluginForClass, DiagramType.class ).getConstructor( null ).newInstance();
+            String pluginForClass = Environment.getPluginForClass(type);
+            return Environment.loadClass( type, pluginForClass == null ? pluginNames : pluginForClass, DiagramType.class ).getConstructor( null ).newInstance();
             //}
     }
 

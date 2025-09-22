@@ -23,7 +23,7 @@ import biouml.model.Diagram;
 import biouml.model.DiagramElement;
 //import biouml.model.SubDiagram.PortOrientation;
 import one.util.streamex.StreamEx;
-import ru.biosoft.access.ClassLoading;
+import ru.biosoft.access.core.Environment;
 import ru.biosoft.access.core.CollectionFactory;
 import ru.biosoft.access.core.DataElementPath;
 import ru.biosoft.exception.ExceptionRegistry;
@@ -130,7 +130,7 @@ public class DiagramXmlSupport extends DiagramXmlConstants
             return clazz;
         try
         {
-            return ClassLoading.loadClass( type );
+            return Environment.loadClass( type );
         }
         catch( LoggedClassNotFoundException e )
         {

@@ -13,7 +13,7 @@ import java.util.logging.Logger;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
-import ru.biosoft.access.ClassLoading;
+import ru.biosoft.access.core.Environment;
 import ru.biosoft.access.core.DataCollection;
 import ru.biosoft.access.core.undo.DataCollectionAddUndo;
 import ru.biosoft.access.core.undo.DataCollectionRemoveUndo;
@@ -353,7 +353,7 @@ public class StateXmlSerializer
 
         try
         {
-            Class<?> type = ( typeStr == null || typeStr.isEmpty() ) ? null : ClassLoading.loadClass( typeStr );
+            Class<?> type = ( typeStr == null || typeStr.isEmpty() ) ? null : Environment.loadClass( typeStr );
             Object source = diagram.getDiagramElement(elementID);
             if( source == null )
             {

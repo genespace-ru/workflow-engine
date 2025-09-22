@@ -9,7 +9,7 @@
  <packaging>pom</packaging>
 
  <modules>
-  <module>server</module>
+  <!--module>server</module-->
   <module>diagram</module>
   <module>wdl</module>
   <module>webapps</module>
