@@ -13,6 +13,7 @@
   <module>diagram</module>
   <module>wdl</module>
   <module>webapps</module>
+  <module>converter</module>
  </modules>
 
  <properties>
