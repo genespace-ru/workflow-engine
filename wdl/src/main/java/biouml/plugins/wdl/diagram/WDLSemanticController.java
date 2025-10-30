@@ -4,6 +4,8 @@ import java.awt.Dimension;
 import java.awt.Point;
 import java.awt.Rectangle;
 
+import javax.annotation.Nonnull;
+
 import biouml.model.Compartment;
 import biouml.model.DefaultSemanticController;
 import biouml.model.DiagramElement;
@@ -12,6 +14,8 @@ import biouml.model.Edge;
 import biouml.model.Node;
 import biouml.standard.type.Base;
 import biouml.standard.type.Stub;
+import ru.biosoft.graphics.editor.ViewEditorPane;
+import ru.biosoft.util.DPSUtils;
 
 /**
  * Semantic controller for workflow diagrams
@@ -19,9 +23,14 @@ import biouml.standard.type.Stub;
 public class WDLSemanticController extends DefaultSemanticController
 {
     @Override
-    public DiagramElementGroup createInstance(Compartment compartment, Object type, Point point, Object properties)
+    public DiagramElementGroup createInstance(@Nonnull Compartment parent, Object type, Point pt, ViewEditorPane viewEditor)
     {
         DiagramElement de = null;
+//        if (type.equals( WDLConstants.LINK_TYPE ))
+//        {
+//            new CreateEdgeAction().createEdge( pt, viewEditor, new LinkCreator() );
+//            return null;
+//        }
         //        NodeType nodeType = (NodeType)type;
         //        switch(nodeType)
         //        {
@@ -43,7 +52,7 @@ public class WDLSemanticController extends DefaultSemanticController
             return DiagramElementGroup.EMPTY_EG;
         return new DiagramElementGroup( de );
     }
-
+    
     @Override
     public Dimension move(DiagramElement de, Compartment newParent, Dimension offset, Rectangle oldBounds) throws Exception
     {

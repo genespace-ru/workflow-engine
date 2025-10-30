@@ -59,7 +59,7 @@ public class Converter
                 log("Image generated: " + imageFile.getName());
             }
 
-            String nextFlow = new NextFlowGenerator().generateNextFlow(diagram, true);
+            String nextFlow = new NextFlowGenerator().generate(diagram);
             File nextFlowFile = new File(parent + "/" + name + ".nf");
             ApplicationUtils.writeString(nextFlowFile, nextFlow);
             log("Nextflow script generated: " + nextFlowFile.getName());
