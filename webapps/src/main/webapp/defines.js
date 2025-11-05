@@ -32,6 +32,7 @@ var appInfo = {
         userProjectsPath: "Examples",
         skipLogin: true,
         build: "1",
-        enableLocales: ["en","ru"]
+        enableLocales: ["en","ru"],
+        iconsPath: "icons/"
         
 };

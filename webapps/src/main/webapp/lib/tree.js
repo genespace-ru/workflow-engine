@@ -757,7 +757,7 @@ function openDefaultPath( callback )
     {
         queryBioUML("web/parameter", {"parameter_name": "defaultPath"}, 
             function(data){
-                defaultPath = data.defaultPath;
+                defaultPath = data.defaultPath[0];
                 getDataCollection(defaultPath).getElementInfoAt(0, function(info)
                         {
                             var path = info ? createPath(defaultPath, info.name) + "/Data" : defaultPath;
