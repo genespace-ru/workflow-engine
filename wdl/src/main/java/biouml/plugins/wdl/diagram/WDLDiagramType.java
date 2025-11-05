@@ -10,6 +10,7 @@ import biouml.model.Diagram;
 import biouml.model.DiagramTypeSupport;
 import biouml.model.Edge;
 import biouml.model.Node;
+import biouml.plugins.wdl.WorkflowUtil;
 import biouml.standard.type.Base;
 
 /**
@@ -30,22 +31,23 @@ public class WDLDiagramType extends DiagramTypeSupport
         semanticController = new WDLSemanticController();
     }
 
-    //    @Override
-    //    public Object[] getNodeTypes()
-    //    {
-    //        return new String[] {WDLConstants.TASK_TYPE};
-    //    }
-    //
-    //    @Override
-    //    public Object[] getEdgeTypes()
-    //    {
-    //        return new Object[] {Base.TYPE_DIRECTED_LINK};
-    //    }
+    @Override
+    public Object[] getNodeTypes()
+    {
+        return new String[] {WDLConstants.TASK_TYPE};
+    }
+
+    @Override
+    public Object[] getEdgeTypes()
+    {
+        return new Object[] {WDLConstants.LINK_TYPE};
+    }
 
     @Override
     public @Nonnull Diagram createDiagram(DataCollection<?> origin, String diagramName, Base kernel) throws Exception
     {
         Diagram d = super.createDiagram( origin, diagramName, kernel );
+        WorkflowUtil.setVersion( d, "1.2");
         return d;
     }
 

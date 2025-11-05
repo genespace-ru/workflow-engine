@@ -12,9 +12,21 @@
 #if($velocityCount < $list.size()),#end
 #end
 #######################################################################################
+#macro(conditional $conditional)
+${BR}if ( $helper.findCondition($conditional) ) {
+#foreach( $n in $helper.orderCalls($conditional) )
+#if ( $helper.isCycle($n) )#scatterNF($n)
+#elseif ( $helper.isCall($n) )#callNF($n)
+#elseif ( $helper.isExpression($n) )#expressionNF($n)
+#elseif ( $helper.isConditional($n) )#conditional($n)
+#end 
+#end
+}
+#end
+#######################################################################################
 #macro(callNF $call)
 #if ($helper.isInsideCycle($call))$helper.prepareInputs($call)#end
-#set ($inputs = $helper.getInputs($call))
+#set ($inputs = $helper.getOrderedInputs($call))
   $helper.getResultName($call) = $helper.getCallName($call)( #foreach($input in $inputs)$helper.getCallInputName($input)#comma($inputs) #end)$BR
 #end
 #######################################################################################
@@ -22,12 +34,14 @@
 #foreach( $n in $helper.orderCalls($scatter))
 #if ($helper.isCycle($n))#scatterNF($n)
 #elseif ($helper.isCall($n))#callNF($n)
+#elseif ( $helper.isExpression($n) )#expressionNF($n)
+#elseif ( $helper.isConditional($n) )#conditional($n)
 #end 
 #end
 #end
 #######################################################################################
 #macro(expressionNF $expression)
-  $helper.getName($expression) = $helper.getExpression($expression)
+  $helper.getName($expression) = $helper.getCallEmit($expression)$BR
 #end 
 #######################################################################################
 #######################################START###########################################
@@ -55,10 +69,10 @@ $helper.getExternalInput($externalParameter)
 #######################################################################################
 #foreach( $task in $helper.getTasks())
 process $task.getName() {
-#set ($inputs = $helper.getInputs($task))
+#set ($inputs = $helper.getOrderedInputs($task))
 #if ($inputs.size() > 0)
 $BR  input :
-#foreach( $input in $inputs )  $helper.getDeclaration($input)$BR#end
+#foreach( $input in $inputs )  $helper.getShortDeclaration($input)$BR#end
 $BR#end
 #set ($container = $helper.getContainer($task))#if($container)  container '$container'$BR#end
 #set ($cpus = $helper.getCPUs($task))#if($cpus)  cpus $cpus$BR#end
@@ -66,7 +80,7 @@ $BR#end
 #set ($maxRetries = $helper.getMaxRetries($task))#if($maxRetries)  maxRetries $maxRetries$BR#end
 $BR  publishDir "$task.getName()", mode: 'copy'
 $BR  script:
-#foreach($declaration in $helper.getPrivateDecarations($task))
+#foreach($declaration in $helper.getPrivateDeclarations($task))
   $helper.writePrivateDeclaration($declaration)
 #end
   """
@@ -99,6 +113,7 @@ $BR  main:
 #if ($helper.isCycle($n))#scatterNF($n)
 #elseif ($helper.isCall($n))#callNF($n)
 #elseif ($helper.isExpression($n))#expressionNF($n)
+#elseif ( $helper.isConditional($n) )#conditional($n)
 #end 
 #end
 #set ($externalOutputs = $helper.getExternalOutputs())

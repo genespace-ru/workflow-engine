@@ -45,3 +45,16 @@ def createChannelIfNeeded(arr)
      else 
         return arr
 }
+
+def select_first(arr)
+{
+	return list.find { it != null && it != '' }
+}
+
+def select_all(array) {
+    return array.findAll { it != null }
+}
+
+def defined(val) {
+    return val != null
+}

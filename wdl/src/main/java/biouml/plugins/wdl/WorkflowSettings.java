@@ -3,7 +3,11 @@ package biouml.plugins.wdl;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
+import org.json.JSONObject;
 
 import com.developmentontheedge.beans.DynamicProperty;
 import com.developmentontheedge.beans.DynamicPropertySet;
@@ -14,7 +18,6 @@ import com.developmentontheedge.beans.annot.PropertyName;
 import biouml.model.Diagram;
 import biouml.model.Node;
 import ru.biosoft.access.DataCollectionUtils;
-//import ru.biosoft.access.FileExporter;
 import ru.biosoft.access.core.DataCollection;
 import ru.biosoft.access.core.DataElement;
 import ru.biosoft.access.core.DataElementPath;
@@ -27,15 +30,20 @@ public class WorkflowSettings extends Option
     private boolean useJson = false;
     private DataElementPath json;
     private DynamicPropertySet parameters = new DynamicPropertySetSupport();
+    
+    public static String NEXTFLOW_TYPE = "Nextflow";
+    public static String CWL_TYPE = "CWL";
+    
+    private String executionType = NEXTFLOW_TYPE;
 
     public void initParameters(Diagram diagram)
     {
-        List<Node> externalParameters = WDLUtil.getExternalParameters( diagram );
+        List<Node> externalParameters = WorkflowUtil.getExternalParameters( diagram );
         for( Node externalParameter : externalParameters )
         {
-            String type = WDLUtil.getType( externalParameter );
-            String name = WDLUtil.getName( externalParameter );
-            Object value = WDLUtil.getExpression( externalParameter );
+            String type = WorkflowUtil.getType( externalParameter );
+            String name = WorkflowUtil.getName( externalParameter );
+            Object value = WorkflowUtil.getExpression( externalParameter );
             Class clazz = String.class;
             if( type.equals( "File" ) || type.equals( "Array[File]" ) )
             {
@@ -48,6 +56,26 @@ public class WorkflowSettings extends Option
         }
     }
 
+    public static Set<String> getFileInputs(String json)
+    {
+        Set<String> result = new HashSet<>();
+        JSONObject map = new JSONObject( json );
+        for( String name : map.keySet() )
+        {
+            Object object = map.get( name );
+            if( object instanceof JSONObject )
+            {
+                Object cls = ( (JSONObject)object ).get( "class" );
+                if( cls.equals( "File" ) )
+                {
+                    Object path = ( (JSONObject)object ).get( "path" );
+                    result.add( path.toString() );
+                }
+            }
+        }
+        return result;
+    }
+
     public void exportCollections(String outputDir) throws Exception
     {
         if( useJson )
@@ -56,18 +84,30 @@ public class WorkflowSettings extends Option
             if( de instanceof TextDataElement )
             {
                 DataCollection dc = de.getOrigin();
-                String content = ((TextDataElement) de).getContent();
+                String content = ( (TextDataElement)de ).getContent();
+                
+                Set<String> fileInputs = getFileInputs(content);
+                for (String fileInput: fileInputs)
+                {
+                    DataElement parameterDe = dc.get( fileInput );
+                    if( parameterDe != null )
+                    {
+                        System.out.println( "Exporting " +fileInput );
+                        WorkflowUtil.export( parameterDe, new File( outputDir ) );
+                    }
+                }
+                
                 String[] parameters = content.replace( "{", "" ).replace( "}", "" ).replace( "\"", "" ).split( "," );
-                for ( String parameter : parameters )
+                for( String parameter : parameters )
                 {
                     try
                     {
                         String name = parameter.split( ":" )[1];
                         DataElement parameterDe = dc.get( name );
                         if( parameterDe != null )
-                            WDLUtil.export( parameterDe, new File( outputDir ) );
+                            WorkflowUtil.export( parameterDe, new File( outputDir ) );
                     }
-                    catch (Exception ex)
+                    catch( Exception ex )
                     {
 
                     }
@@ -80,7 +120,7 @@ public class WorkflowSettings extends Option
             if( dp.getValue() instanceof DataElementPath )
             {
                 DataElement de = ( (DataElementPath)dp.getValue() ).getDataElement();
-                WDLUtil.export( de, new File( outputDir ) );
+                WorkflowUtil.export( de, new File( outputDir ) );
             }
         }
     }
@@ -93,8 +133,6 @@ public class WorkflowSettings extends Option
             DataElement de = getJson().getDataElement();
             File sourceFile = DataCollectionUtils.getElementFile( de );
             ApplicationUtils.linkOrCopyFile( json, sourceFile, null );
-            //FileExporter exporter = new FileExporter();
-            //exporter.doExport( de, json );
             return json;
         }
 
@@ -115,6 +153,19 @@ public class WorkflowSettings extends Option
                 bw.write( "\"" + dp.getName() + "\"" + " : " + value + "\n" );
             }
             bw.write( "}\n" );
+        }
+        return json;
+    }
+
+    public File generateParametersJSON2(String outputDir) throws Exception
+    {
+        File json = new File( outputDir, "parameters.json" );
+        if( isUseJson() )
+        {
+            DataElement de = getJson().getDataElement();
+            File sourceFile = DataCollectionUtils.getElementFile( de );
+            ApplicationUtils.linkOrCopyFile( json, sourceFile, null );
+            return json;
         }
         return json;
     }
@@ -145,7 +196,7 @@ public class WorkflowSettings extends Option
         firePropertyChange( "outputPath", oldValue, outputPath );
     }
 
-    @PropertyName("From json")
+    @PropertyName ( "From json" )
     public boolean isUseJson()
     {
         return useJson;
@@ -164,7 +215,7 @@ public class WorkflowSettings extends Option
         firePropertyChange( "*", null, null );
     }
 
-    @PropertyName("Parameters json")
+    @PropertyName ( "Parameters json" )
     public DataElementPath getJson()
     {
         return json;
@@ -175,5 +226,18 @@ public class WorkflowSettings extends Option
         Object oldValue = this.json;
         this.json = json;
         firePropertyChange( "json", oldValue, json );
+    }
+
+    @PropertyName("Execution Type")
+    public String getExecutionType()
+    {
+        return executionType;
+    }
+
+    public void setExecutionType(String executionType)
+    {
+        Object oldValue = this.executionType;
+        this.executionType = executionType;
+        firePropertyChange( "executionType", oldValue, executionType );
     }
 }
