@@ -1,0 +1,16 @@
+logout.json
+login.json
+home.json
+toggleui.json
+toggle_repository.json
+account_info.json
+project_properties.json
+help.json
+
+save.json
+saveas.json
+export.json
+import.json:Import
+
+undo.json
+redo.json

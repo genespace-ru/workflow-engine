@@ -26,4 +26,5 @@ perspectives:
 environment:
     ServerPath: "../diagrams/"
     DocRoot: "/diagrams"
+    ActionsPath: "webapps/src/main/resources/files/actions/"
 defaultPath: GenericFDC

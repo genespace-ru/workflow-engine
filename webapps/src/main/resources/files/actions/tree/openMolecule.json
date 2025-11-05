@@ -1,0 +1,27 @@
+/*
+ * Open file action
+ */
+{
+    id: "open_molecule",
+    label: resources.actTreeOpenMolecule,
+	icon: "appInfo.iconsPath+'molecule.png'",
+    visible: "function(completePath)
+    {
+		var path = getElementPath(completePath);
+		var name = getElementName(completePath);
+		if(!path || !name) return -1;
+        var dc = getDataCollection(path);
+        var type = dc.getChildClass(name);
+        if (instanceOf(type,'ru.biosoft.access.core.TextDataElement') && name.endsWith('pdb')) 
+        {
+            return true;
+        }
+        return -1;
+    }",
+    action: "function(path)
+    {
+    	createMoleculeDocument(path, function (document){
+			openDocumentTab(document);
+        });
+    }"
+}

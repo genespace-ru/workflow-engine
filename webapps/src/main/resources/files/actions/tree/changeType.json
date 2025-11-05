@@ -1,0 +1,49 @@
+/*
+ * Change type of element inside FolderDataCollection
+ */
+{
+    id: "change_type_fdc",
+    label: resources.actTreeChangeType,
+    icon: "appInfo.iconsPath+'edit.gif'",
+    visible: "function(completePath)
+    {
+      if(!completePath) return -1;
+      //console.log('changeType.json: visible()');
+      var parentPath = getElementPath(completePath);
+      if(!parentPath)
+        return -1;
+      var parentName = getElementName(parentPath);
+      var parParPath = getElementPath(parentPath);
+      var parentType = undefined;
+      if(!parParPath)
+      {
+          var parentDC = getDataCollection(parentPath);
+          parentType = parentDC.getAttributesNoParent()['server-class'];
+      }
+      else
+      {
+          var parPar = getDataCollection(parParPath);
+          if(parPar == null)
+            return -1;
+          parentType = parPar.getChildClass(parentName);
+      }
+      //console.log('Parent collection type: ' + parentType );
+      if (instanceOf(parentType,'ru.biosoft.access.file.FileDataCollection') || instanceOf(parentType,'ru.biosoft.access.file.GenericFileDataCollection')) 
+        return true;
+      return -1;
+    }",
+    action: "function(completePath)
+    {
+       var name = getElementName(completePath);
+       createBeanEditorDialog('Edit ' + name, 'properties/fdc/' + completePath, function() {
+           closeDocumentByPath(completePath);
+           refreshTreeBranch(getElementPath(completePath));
+           var curDoc = getActiveDocument();
+           if(curDoc && curDoc.updateItemView)
+           {
+              dc = getDataCollection(completePath);
+              curDoc.updateItemView(dc);
+           }
+       }, true);     
+    }"
+}

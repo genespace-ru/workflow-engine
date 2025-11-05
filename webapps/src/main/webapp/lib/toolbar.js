@@ -452,6 +452,8 @@ function Action()
             if(action.label.startsWith("resources"))
                 this.label = eval(action.label);
             this.icon = action.icon;
+            if(action.icon.startsWith("appInfo"))
+                this.icon = eval(action.icon);
             this.multi = action.multi;
             this.useOriginalPath = action.useOriginalPath;
             this.isVisible = evalFunction(action.visible, function(){return -1;});
