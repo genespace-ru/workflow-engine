@@ -1,6 +1,7 @@
 package biouml.model;
 
 import biouml.model.server.DiagramService;
+import biouml.model.server.WebDiagramsActionsProvider;
 import biouml.model.server.WebDiagramsProvider;
 import biouml.plugins.server.access.AccessService;
 import ru.biosoft.access.file.FileType;
@@ -9,7 +10,6 @@ import ru.biosoft.access.file.FileTypeRegistry;
 import ru.biosoft.access.generic.TransformerRegistry;
 import ru.biosoft.server.ServiceRegistry;
 import ru.biosoft.server.servlets.webservices.providers.WebProviderFactory;
-import ru.biosoft.table.datatype.DataType;
 import ru.biosoft.util.Initializer;
 
 public class DiagramInitializer extends Initializer
@@ -53,6 +53,7 @@ public class DiagramInitializer extends Initializer
     @Override protected void initProviders()
     {
         WebProviderFactory.registerProvider( "diagram", new WebDiagramsProvider() );
+        WebProviderFactory.registerProvider( "action", new WebDiagramsActionsProvider() );
     }
 
     @Override protected void initBeanProviders()
