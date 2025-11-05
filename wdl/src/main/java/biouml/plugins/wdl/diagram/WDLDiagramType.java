@@ -30,17 +30,17 @@ public class WDLDiagramType extends DiagramTypeSupport
         semanticController = new WDLSemanticController();
     }
 
-    @Override
-    public Object[] getNodeTypes()
-    {
-        return new String[] {WDLConstants.TASK_TYPE};
-    }
-
-    @Override
-    public Object[] getEdgeTypes()
-    {
-        return new Object[] {Base.TYPE_DIRECTED_LINK};
-    }
+    //    @Override
+    //    public Object[] getNodeTypes()
+    //    {
+    //        return new String[] {WDLConstants.TASK_TYPE};
+    //    }
+    //
+    //    @Override
+    //    public Object[] getEdgeTypes()
+    //    {
+    //        return new Object[] {Base.TYPE_DIRECTED_LINK};
+    //    }
 
     @Override
     public @Nonnull Diagram createDiagram(DataCollection<?> origin, String diagramName, Base kernel) throws Exception
