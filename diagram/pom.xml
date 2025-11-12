@@ -98,6 +98,13 @@
         <artifactId>commons-lang3</artifactId>
         <version>3.17.0</version>
     </dependency>
+    
+    <!-- used for annotations @Nonnull etc-->
+    <dependency>
+        <groupId>com.github.spotbugs</groupId>
+        <artifactId>spotbugs-annotations</artifactId>
+        <version>4.9.0</version>
+    </dependency>
 
 </dependencies>
  
