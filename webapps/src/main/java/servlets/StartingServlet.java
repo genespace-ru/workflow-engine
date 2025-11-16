@@ -40,6 +40,7 @@ import ru.biosoft.util.ServerPreferences;
 import biouml.model.DiagramInitializer;
 import biouml.plugins.wdl.WDLInitializer;
 import biouml.model.DiagramTypes;
+import converter.ConverterAPI;
 
 @WebServlet(urlPatterns = { "/diagrams/*" }, initParams = { @WebInitParam(name = "configPath", value = "config.yml") })
 public class StartingServlet extends HttpServlet
@@ -185,6 +186,10 @@ public class StartingServlet extends HttpServlet
                 }
             }
             WebServletHandler.handle(request, response, "POST", extraParameters);
+        }
+        else if( target.startsWith( "/diagrams/wdl/convert" ) )
+        {
+            ConverterAPI.handle( request, response, "POST" );
         }
         else
             WebServletHandler.handle(request, response, "POST");

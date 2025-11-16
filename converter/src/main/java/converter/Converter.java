@@ -72,7 +72,7 @@ public class Converter
         }
     }
 
-    private static Diagram loadDiagram(String path) throws Exception
+    protected static Diagram loadDiagram(String path) throws Exception
     {
         File f = new File(path);
 

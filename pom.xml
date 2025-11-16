@@ -12,8 +12,9 @@
   <!--module>server</module-->
   <module>diagram</module>
   <module>wdl</module>
-  <module>webapps</module>
   <module>converter</module>
+  <module>webapps</module>
+  
  </modules>
 
  <properties>

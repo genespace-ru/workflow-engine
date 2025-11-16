@@ -1,0 +1,26 @@
+<html>
+<head>
+</head>
+<body>
+<form action="http://localhost:9998/diagrams/wdl/convert" method="post" enctype="multipart/form-data">
+    <label for="inputWdl">WDL:</label><br>
+    <input type="file" name="inputWdl"/><br>
+    
+    <label for="convertType">Convert to:</label><br>
+    <select name="convertType" id="convertType">
+      <option value="diagram">Diagram</option>
+      <option value="nextflow">Nextflow</option>
+    </select>
+        
+    <label for="outputType">Diagram output type:</label><br>
+    <select name="outputType" id="outputType">
+      <option value="image">PNG image</option>
+      <option value="text">XML diagram filie</option>
+    </select><br>
+    
+    <input type="submit" value="Convert"> 
+    
+</form>
+</body>
+</html>
+    
