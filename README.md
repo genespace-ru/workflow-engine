@@ -1,7 +1,7 @@
 
 # To Build
 
-Java 17 should be installed
+Java 21 should be installed
 
 Build workflow-engine
 
@@ -32,7 +32,7 @@ Use your browser to open it at http://localhost:9998/
 
 # To Run command line tool
 
-You will need java 17 or higher
+You will need java 21
 
 To convert WDL to Nextflow:
 
