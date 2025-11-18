@@ -84,7 +84,9 @@ public class Converter
         String text = ApplicationUtils.readAsString(f);
 
         AstStart start = new WDLParser().parse(new StringReader(text));
-        return importer.generateDiagram(start, null, "diagram");
+        Diagram diagram = importer.generateDiagram(start, null, "diagram");
+        importer.layout( diagram );
+        return diagram;
     }
 
     public static void exportImage(@Nonnull
