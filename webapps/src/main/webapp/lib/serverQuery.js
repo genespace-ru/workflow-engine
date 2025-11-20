@@ -27,7 +27,7 @@ function ping()
             refreshTreeBranch(path);
         ping();
     }, function(){
-        setTimeout(ping, 10000);
+        setTimeout(ping, 100000);
     });
 }
 

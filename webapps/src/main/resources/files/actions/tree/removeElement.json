@@ -10,12 +10,23 @@
     {
 		var path = getElementPath(completePath);
 		var name = getElementName(completePath);
-		if(!path || !name) return -1;
-		if( perspective && perspective.name && 'Genome Enhancer' === perspective.name )
-            return -1;
+		if(!name) return -1;
         
+        
+        var dc = null;
+        var dctype = null;
+        if(!path)
+        {
+            dc = getDataCollection(completePath);
+            dctype = dc.getClassNoParent();
+        }
+        else
+        {
+            dc = getDataCollection(path);
+            dctype = dc.getClass();
+        }
         var dc = getDataCollection(path);
-        if( instanceOf(dc.getClass(), 'ru.biosoft.access.core.FolderCollection') )
+        if( instanceOf(dctype, 'ru.biosoft.access.core.FolderCollection') )
         {
             return true;
         }
@@ -27,7 +38,7 @@
 			|| (instanceOf(type,'ru.biosoft.access.TransformedDataCollection') && instanceOf(getDataCollection(completePath).getChildClass(),'ru.biosoft.bsa.SiteModel'))
             || instanceOf(type,'biouml.plugins.optimization.Optimization') || instanceOf(type,'biouml.standard.simulation.plot.Plot')
             || instanceOf(type,'ru.biosoft.access.ImageDataElement') || instanceOf(type,'ru.biosoft.access.core.TextDataElement')
-            || (instanceOf(type,'biouml.model.Diagram') && path.substring(0,5)=='data/')
+            || (instanceOf(type,'biouml.model.Diagram'))
             || (instanceOf(type,'ru.biosoft.bsa.analysis.WeightMatrixCollection') && path.substring(0,5)=='data/'))
         {
             return true;
