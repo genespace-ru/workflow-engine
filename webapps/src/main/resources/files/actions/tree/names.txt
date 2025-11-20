@@ -6,7 +6,7 @@ expand.json
 newDiagram.json
 newElement.json
 newFolder.json
-import.json:Import
+importWDL.json
 saveas.json
 copyFolder.json
 removeElement.json

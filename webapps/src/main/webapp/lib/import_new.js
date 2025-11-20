@@ -30,6 +30,12 @@ var fileUploadDiv = $('<span id="fud" class="upload-div"><div class="fileUploadF
 		'<div id="fileContent" class="fileUploadForm" title="'+resources.uploadFromContentToolTip+'">'+
 			'<div class="fileUploadText">'+resources.uploadFromContentTitle+'</div>'+
 		'</div></span>');
+        
+var fileUploadSingleDiv = $('<span id="fud" class="upload-div"><div class="fileUploadForm" title="'+resources.uploadFromComputerToolTip+'">'+
+                    '<div class="fileUploadText">'+resources.uploadFromComputerTitle+'</div>'+
+                    '<input type="file" name="file" id="fileUploadInput" class="fileUpload">'+
+                '</div></span>');
+                
 var progressBarTemplate = $("<div/>");
 
 var defaultWidth = 520;
@@ -39,11 +45,18 @@ var vAutoOpen;
 var importPath;
 var inputPath;
 var vCallback;
-function doImportMultiple(path, autoOpen, callback)
+var defaultImportURL = "web/import";
+
+function doImportMultiple(path, autoOpen, callback, otherImportURL)
 {
 	vCallback = callback;
 	if (typeof(autoOpen)==='undefined') vAutoOpen = true;
 	else vAutoOpen = autoOpen;
+    
+    if(otherImportURL)
+        importURL = otherImportURL;
+    else
+        importURL = defaultImportURL;
 
 	inputPath = path;
     importPath = getImportPath(path);
@@ -223,7 +236,7 @@ function removeUploadedFile(uploadID)
 		type: "deleteUpload",
 		fileID: uploadID
 	};
-	queryBioUML("web/import", removeOptions, function(data) {}, function(data) {});
+	queryBioUML(importURL, removeOptions, function(data) {}, function(data) {});
 }
 
 function addFileRow(uploadDialogDiv, uploadID, fileName)
@@ -432,7 +445,7 @@ function detectFormatAndImport(uploadID, success, fail)
                 jobID: importID,
                 fileID: uploadID
             };
-        queryBioUML("web/import", requestParameters, function(data)
+        queryBioUML(importURL, requestParameters, function(data)
         {
         	initPropertyInspectorFromJSON(data, uploadID, importID, selectedFormat, propertyPane, optionsBlock);
         }, function()
@@ -452,7 +465,7 @@ function detectFormatAndImport(uploadID, success, fail)
 		{
 			$(":button:contains('Start')").removeAttr("disabled").attr("disabled", "disabled").addClass("ui-state-disabled");
 			formats.change(formatChangeHandler);
-            queryBioUML("web/import",
+            queryBioUML(importURL,
     	    {
     	        de: importPath,
     	        type: "deInfo"
@@ -468,7 +481,7 @@ function detectFormatAndImport(uploadID, success, fail)
 			targetPropertyPane.generate();
 			targetPropertyPane.addChangeListener(function(control, oldValue, newValue) {
 				importPath = newValue;
-				queryBioUML("web/import",
+				queryBioUML(importURL,
             	    {
             	        de: importPath,
             	        type: "deInfo"
@@ -522,7 +535,7 @@ function doImport(selectedFormat, uploadID, importID, propertyPane, importDialog
         propertyPane.updateModel();
         importProperties.json = convertDPSToJSON(propertyPane.getModel());
     }
-	queryBioUML("web/import", importProperties, function(data) {}, function(data)
+	queryBioUML(importURL, importProperties, function(data) {}, function(data)
 	{
     	logger.error(resources.dlgImportErrorImportFailed+"<br>"+data.message);
 		importDialogDiv.dialog("close");
@@ -578,7 +591,7 @@ function initPropertyInspectorFromJSON(data, uploadID, importID, selectedFormat,
             json: json,
             fileID: uploadID
         };
-        queryBioUML( "web/import", requestParameters, function(data) {
+        queryBioUML( importURL, requestParameters, function(data) {
         	initPropertyInspectorFromJSON(data, uploadID, importID, selectedFormat, propertyPane, optionsBlock);
     	} );
 	});
@@ -620,7 +633,7 @@ function initImportFormats(importers, addAutoDetect, importDialogDiv)
 
 function detectImportFormat(uploadID, detectedFormat, selectedFormat, importDialogDiv)
 {
-	queryBioUML("web/import", {
+	queryBioUML(importURL, {
         de: importPath,
         type: "detect",
         fileID: uploadID
@@ -663,8 +676,18 @@ function getImportPath(path)
 	    importPath = genericParent;
 	else
 	{ 
-	    logger.error(resources.dlgImportErrorNoImportersForCollection);
-	    return null;
+        var genericParent = importPath;
+        while(genericParent != "" && !instanceOf(getDataCollection(genericParent).getClassNoParent(), "ru.biosoft.access.core.FolderCollection"))
+        {
+            genericParent = getElementPath(genericParent);
+        }
+        if(genericParent != "") 
+                importPath = genericParent;
+        else
+        {
+    	    logger.error(resources.dlgImportErrorNoImportersForCollection);
+    	    return null;
+        }
 	}
 	return importPath;
 }
@@ -679,3 +702,65 @@ function isUploadPending(uploadID)
     }
     return true;
 }
+
+
+function doImportSingleFile(path, autoOpen, callback, importURL)
+{
+    var dialogDiv = $('<div title="Upload WDL file"></div>');
+    var inputField = $('<input type="file" name="file" multiple>');
+    dialogDiv.append(inputField);
+    var importPath = getImportPath(path)
+    
+    inputField.change(function() {
+        var uploadsNumber = this.files.length;
+        for( var i=0; i<uploadsNumber; i=i+1 )
+        {
+            var file = this.files[i];                            
+            var uploadID = rnd();
+            var data = new FormData();
+            data.append('file', file);
+            var xhr = new XMLHttpRequest();
+            xhr.addEventListener('readystatechange', function(e) {
+                if( this.readyState === 4 ) {
+                    var importID = rnd();
+                    var importProperties = {
+                        de: importPath,
+                        action: "import",
+                        fileID: uploadID,
+                        jobID: importID
+                    };
+                    queryBioUML(importURL, importProperties, function(data) {
+                       refreshTreeBranch( getElementPath(data.values));
+                    }, function(data)
+                    {
+                        logger.error(resources.dlgImportErrorImportFailed+"<br>"+data.message);
+                        inputField.parent().remove();
+                    });
+                }
+            });
+            xhr.open("POST", '/diagrams/web/upload?fileID="'+ uploadID + '"&name="upload' + uploadID
+                + '" id="upload' + uploadID + '" enctype="multipart/form-data"');
+            xhr.send(data);
+        }
+        inputField.parent().remove();
+    });
+        
+    dialogDiv.dialog(
+    {
+        autoOpen: false,
+        width: 300,
+        modal: true,
+        buttons: 
+        {
+            "Cancel": function()
+            {
+                $(this).dialog("close");
+                $(this).remove();
+            }
+        }
+    });
+    addDialogKeys(dialogDiv);
+    dialogDiv.dialog("open");
+    inputField.focus();
+}
+

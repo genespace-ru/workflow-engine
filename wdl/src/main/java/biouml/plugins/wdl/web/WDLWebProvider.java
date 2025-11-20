@@ -16,12 +16,17 @@ import biouml.plugins.wdl.WorkflowSettings;
 import biouml.plugins.wdl.diagram.WDLImporter;
 import biouml.plugins.wdl.parser.AstStart;
 import biouml.plugins.wdl.parser.WDLParser;
+import ru.biosoft.access.core.DataCollection;
+import ru.biosoft.access.core.DataElement;
+import ru.biosoft.access.core.DataElementImporter;
 import ru.biosoft.access.core.DataElementPath;
 import ru.biosoft.server.JSONUtils;
 import ru.biosoft.server.servlets.webservices.BiosoftWebRequest;
 import ru.biosoft.server.servlets.webservices.JSONResponse;
+import ru.biosoft.server.servlets.webservices.WebServicesServlet;
 //import ru.biosoft.server.servlets.webservices.providers.WebDiagramsProvider;
 import ru.biosoft.server.servlets.webservices.providers.WebJSONProviderSupport;
+import ru.biosoft.util.FileItem;
 import ru.biosoft.util.TempFiles;
 
 public class WDLWebProvider extends WebJSONProviderSupport
@@ -93,65 +98,28 @@ public class WDLWebProvider extends WebJSONProviderSupport
                 log.log( Level.SEVERE, e.getMessage() );
                 response.error( e.getMessage() );
             }
-            //            String nextFlow = new NextFlowGenerator().generateNextFlow( diagram );
-            //            JSONArray jsonSettings = arguments.getJSONArray( "settings" );
-            //            JSONUtils.correctBeanOptions( settings, jsonSettings );
-            //            try
-            //            {
-            //                if( settings.getOutputPath() == null )
-            //                {
-            //                    response.error( "Output path not specified" );
-            //                    return;
-            //                }
-            //
-            //                String name = diagram.getName();
-            //
-            //                new File( outputDir ).mkdirs();
-            //                DataCollectionUtils.createSubCollection( settings.getOutputPath() );
-            //
-            //                File config = new File( outputDir, "nextflow.config" );
-            //                ApplicationUtils.writeString( config, "docker.enabled = true" );
-            //
-            //                File json = settings.generateParametersJSON( outputDir );
-            //
-            //                settings.exportCollections( outputDir );
-            //
-            //                WDLUtil.generateFunctions( outputDir );
-            //
-            //                for ( DataElement de : StreamEx.of( WDLUtil.getImports( diagram ) ).map( f -> f.getSource().getDataElement() ) )
-            //                    WDLUtil.export( de, new File( outputDir ) );
-            //
-            //                NextFlowPreprocessor preprocessor = new NextFlowPreprocessor();
-            //                nextFlow = preprocessor.preprocess( nextFlow );
-            //                File f = new File( outputDir, name + ".nf" );
-            //                ApplicationUtils.writeString( f, nextFlow );
-            //
-            //                ProcessBuilder builder = new ProcessBuilder( "nextflow", f.getName(), "-c", "nextflow.config", "-params-file", json.getName() );
-            //                builder.directory( new File( outputDir ) );
-            //
-            //                Process process = builder.start();
-            //                StreamGobbler inputReader = new StreamGobbler( process.getInputStream(), true );
-            //                StreamGobbler errorReader = new StreamGobbler( process.getErrorStream(), true );
-            //                process.waitFor();
-            //
-            //                if( process.exitValue() == 0 )
-            //                {
-            //                    log.log( Level.INFO, inputReader.getData() );
-            //                    importResults( diagram, settings );
-            //                    response.sendString( settings.getOutputPath().toString() );
-            //                }
-            //                else
-            //                {
-            //                    String errorStr = errorReader.getData();
-            //                    log.log( Level.SEVERE, "Nextflow executed with error: " + errorStr );
-            //                    response.error( errorStr );
-            //                }
-            //            }
-            //            catch (Exception ex)
-            //            {
-            //                response.error( ex.getMessage() );
-            //            }
+        }
+        else if( "import".equals( action ) )
+        {
 
+            String fileID = arguments.get( "fileID" );
+            final FileItem file = WebServicesServlet.getUploadedFile( fileID );
+            DataElement result = null;
+            try
+            {
+                DataCollection<?> dc = arguments.getDataCollection();
+                final String origFileName = file.getOriginalName();
+                final String fileName = origFileName.replaceFirst( "\\.\\w+$", "" );
+                DataElementImporter importer = new WDLImporter();
+                importer.getProperties( dc, file, fileName );
+                result = importer.doImport( dc, file, fileName, null, log );
+                response.sendString( result.getCompletePath().toString() );
+            }
+            catch (Exception e)
+            {
+                log.log( Level.SEVERE, e.getMessage() );
+                response.error( e.getMessage() );
+            }
         }
     }
 
