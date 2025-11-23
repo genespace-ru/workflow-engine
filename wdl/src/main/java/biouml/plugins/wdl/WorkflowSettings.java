@@ -18,7 +18,6 @@ import com.developmentontheedge.beans.annot.PropertyName;
 import biouml.model.Diagram;
 import biouml.model.Node;
 import ru.biosoft.access.DataCollectionUtils;
-import ru.biosoft.access.FileExporter;
 import ru.biosoft.access.core.DataCollection;
 import ru.biosoft.access.core.DataElement;
 import ru.biosoft.access.core.DataElementPath;

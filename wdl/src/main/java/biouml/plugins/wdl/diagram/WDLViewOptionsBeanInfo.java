@@ -2,6 +2,8 @@ package biouml.plugins.wdl.diagram;
 
 import com.developmentontheedge.beans.BeanInfoEx;
 
+import ru.biosoft.graphics.editor.FontEditor;
+
 
 public class WDLViewOptionsBeanInfo extends BeanInfoEx
 {

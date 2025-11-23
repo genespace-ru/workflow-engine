@@ -17,6 +17,7 @@ import biouml.model.Diagram;
 import biouml.model.util.DiagramImageGenerator;
 import biouml.plugins.wdl.NextFlowGenerator;
 import biouml.plugins.wdl.diagram.WDLImporter;
+import biouml.plugins.wdl.diagram.WDLLayouter;
 import biouml.plugins.wdl.parser.AstStart;
 import biouml.plugins.wdl.parser.WDLParser;
 import ru.biosoft.util.ApplicationUtils;
@@ -85,7 +86,7 @@ public class Converter
 
         AstStart start = new WDLParser().parse(new StringReader(text));
         Diagram diagram = importer.generateDiagram(start, null, "diagram");
-        importer.layout( diagram );
+        WDLLayouter.layout( diagram );
         return diagram;
     }
 
