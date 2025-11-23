@@ -13,7 +13,6 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-//import com.developmentontheedge.application.ApplicationUtils;
 import com.developmentontheedge.beans.DynamicProperty;
 
 import biouml.model.Compartment;
@@ -58,6 +57,11 @@ public class WorkflowUtil
     public static boolean isConditional(Node node)
     {
         return isOfType( WDLConstants.CONDITIONAL_TYPE, node );
+    }
+    
+    public static boolean isCondition(Node node)
+    {
+        return isOfType( WDLConstants.CONDITION_TYPE, node );
     }
 
     public static boolean isLink(DiagramElement de)
@@ -114,6 +118,19 @@ public class WorkflowUtil
         return c.stream( Compartment.class ).filter( n -> isCycle( n ) ).toList();
     }
 
+    public static List<Compartment> getParentCycles(Compartment c)
+    {
+        List<Compartment> result = new ArrayList<>();
+        Compartment parent = c.getCompartment();
+        while (!(parent instanceof Diagram))
+        {
+            if (isCycle( parent ))
+                result.add( parent );
+            parent = parent.getCompartment();
+        }
+        return result;
+    }
+    
     public static List<Node> getExternalParameters(Diagram diagram)
     {
         return diagram.stream( Node.class ).filter( n -> isExternalParameter( n ) ).sorted( new PositionComparator() ).toList();
@@ -138,6 +155,11 @@ public class WorkflowUtil
     public static List<Compartment> getCalls(Compartment c)
     {
         return c.stream( Compartment.class ).filter( n -> isCall( n ) ).toList();
+    }
+    
+    public static List<Node> getExpressions(Compartment c)
+    {
+        return c.stream( Node.class ).filter( n -> isExpression( n ) ).toList();
     }
 
     public static List<Compartment> getAllCalls(Compartment c)
@@ -440,7 +462,7 @@ public class WorkflowUtil
         }
         return matches;
     }
-    
+
     public static Node findExpressionNode(Diagram diagram, String name)
     {
         if( name.contains( "." ) )
@@ -517,7 +539,7 @@ public class WorkflowUtil
     {
         return node.edges().filter( e -> e.getOutput().equals( node ) ).map( e -> e.getInput() ).findAny().orElse( null );
     }
-
+    
     public static String getCycleName(Compartment c)
     {
         Node cycleNode = getCycleNode( c );
@@ -528,8 +550,8 @@ public class WorkflowUtil
     {
         List<Node> result = new ArrayList<>();
         Map<Node, Set<Node>> previousSteps = new HashMap<>();
-        for( Node c : compartment.stream( Node.class )
-                .filter( c -> isCall( c ) || isCycle( c ) || isExpression( c ) || isConditional( c ) || isExternalParameter( c ) || isCycleVariable( c )) )
+        for( Node c : compartment.stream( Node.class ).filter( c -> isCall( c ) || isCycle( c ) || isExpression( c ) || isConditional( c )
+                || isExternalParameter( c ) || isCycleVariable( c ) || isCondition( c ) ) )
             previousSteps.put( c, getPreviousSteps( c, compartment ) );
 
         Set<Node> added = new HashSet<>();
@@ -575,8 +597,8 @@ public class WorkflowUtil
         if( !isInside( node, threshold ) )
             return null;
 
-//        if( isExpression( node ) )
-//            return node;//todo: expression inside workflows!
+        //        if( isExpression( node ) )
+        //            return node;//todo: expression inside workflows!
 
         Compartment c = node.getCompartment();
         LinkedList<Compartment> parents = new LinkedList<>();
@@ -760,4 +782,32 @@ public class WorkflowUtil
             return (Declaration[])declarations;
         return new Declaration[0];
     }
+    
+    public static boolean isDependent(Node node, Node from)
+    {
+         for (Node source: getSources(node))
+         {
+             if (isDependent(source, from))
+                 return true;
+         }
+         return false;
+    }
+    
+    /**
+     * Returns stream of all immediate sources of current node
+     */
+    public static StreamEx<Node> getSources(Node node)
+    {
+       return node.edges().map( e->e.getInput() ).without( node );
+    }
+    
+    public static boolean isCallResult(Node node)
+    {
+        return getSources(node).anyMatch( n->isCall( n.getCompartment()) );
+    }
+    
+//    public static breakChain(List<Node> calls)
+//    {
+//        
+//    }
 }
