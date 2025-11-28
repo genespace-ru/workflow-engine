@@ -5,7 +5,6 @@ import javax.annotation.Nonnull;
 import com.developmentontheedge.beans.annot.PropertyName;
 
 import ru.biosoft.access.core.DataCollection;
-import biouml.model.Compartment;
 import biouml.model.Diagram;
 import biouml.model.DiagramTypeSupport;
 import biouml.model.Edge;
@@ -54,12 +53,7 @@ public class WDLDiagramType extends DiagramTypeSupport
     @Override
     public boolean needLayout(Node node)
     {
-        if( ! ( node instanceof Compartment ) )
-            return false;
-        Base kernel = node.getKernel();
-        if( kernel == null )
-            return true;
-        return false;
+        return (WorkflowUtil.isCycle( node ) || WorkflowUtil.isConditional( node ));
     }
 
     @Override

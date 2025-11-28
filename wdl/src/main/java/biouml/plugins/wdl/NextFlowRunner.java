@@ -12,13 +12,10 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Logger;
 
-//import com.developmentontheedge.application.ApplicationUtils;
-
 import biouml.model.Compartment;
 import biouml.model.Diagram;
 import one.util.streamex.StreamEx;
 import ru.biosoft.access.DataCollectionUtils;
-//import ru.biosoft.access.TextFileImporter;
 import ru.biosoft.access.core.DataCollection;
 import ru.biosoft.access.core.TextDataElement;
 import ru.biosoft.util.ApplicationUtils;
@@ -79,6 +76,7 @@ public class NextFlowRunner
             builder.directory( new File( outputDir ) );
         }
 
+        System.out.println("COMMAND: " + StreamEx.of(builder.command()).joining(" "));
         Process process = builder.start();
 
         new Thread( new Runnable()

@@ -1,10 +1,7 @@
 package biouml.plugins.wdl.diagram;
 
 import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.GradientPaint;
 import java.awt.Graphics;
-import java.awt.Paint;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.geom.RectangularShape;
@@ -23,6 +20,7 @@ import biouml.model.Edge;
 import biouml.model.Node;
 import biouml.model.graph.InOutFinder;
 import biouml.plugins.wdl.WorkflowUtil;
+import biouml.standard.type.DimensionEx;
 import biouml.standard.type.Type;
 import ru.biosoft.access.core.DataCollectionConfigConstants;
 import ru.biosoft.access.core.DataElementPath;
@@ -40,6 +38,7 @@ import ru.biosoft.graphics.PolygonView;
 import ru.biosoft.graphics.SimplePath;
 import ru.biosoft.graphics.TextView;
 import ru.biosoft.graphics.View;
+import ru.biosoft.graphics.font.ColorFont;
 
 public class WDLViewBuilder extends DefaultDiagramViewBuilder
 {
@@ -186,11 +185,11 @@ public class WDLViewBuilder extends DefaultDiagramViewBuilder
 
     protected boolean createStructView(CompositeView container, Node node, WDLViewOptions viewOptions, Graphics g)
     {
-        Dimension size = node.getShapeSize().getDimension();
+        DimensionEx size = node.getShapeSize();
 
         View text = new ComplexTextView( StringEscapeUtils.escapeHtml4( node.getTitle() ), viewOptions.getDefaultFont(),
                 viewOptions.getFontRegistry(), ComplexTextView.TEXT_ALIGN_CENTER, 30, g );
-        RectangularShape roundRect = new RoundRectangle2D.Float( 0, 0, size.width, size.height, 5, 5 );
+        RectangularShape roundRect = new RoundRectangle2D.Float( 0, 0, size.getWidth(), size.getHeight(), 5, 5 );
         Brush nodeBrush = getBrush( node, viewOptions.getStructBrush() );
         BoxView view = new BoxView( viewOptions.getAnalysisPen(), nodeBrush, roundRect );
         view.setLocation( node.getLocation() );
@@ -203,11 +202,11 @@ public class WDLViewBuilder extends DefaultDiagramViewBuilder
     
     protected boolean createTaskView(CompositeView container, Compartment compartment, WDLViewOptions viewOptions, Graphics g)
     {
-        Dimension size = compartment.getShapeSize().getDimension();
+    	DimensionEx size = compartment.getShapeSize();
 
         View text = new ComplexTextView( StringEscapeUtils.escapeHtml4( compartment.getTitle() ), viewOptions.getDefaultFont(),
                 viewOptions.getFontRegistry(), ComplexTextView.TEXT_ALIGN_CENTER, 30, g );
-        RectangularShape roundRect = new RoundRectangle2D.Float( 0, 0, size.width, size.height, 5, 5 );
+        RectangularShape roundRect = new RoundRectangle2D.Float( 0, 0, size.getWidth(), size.getHeight(), 5, 5 );
         Brush nodeBrush = getBrush( compartment, viewOptions.getTaskBrush() );
         BoxView view = new BoxView( viewOptions.getAnalysisPen(), nodeBrush, roundRect );
         view.setLocation( compartment.getLocation() );
@@ -220,12 +219,12 @@ public class WDLViewBuilder extends DefaultDiagramViewBuilder
 
     protected boolean createCommandCallView(CompositeView container, Compartment compartment, WDLViewOptions viewOptions, Graphics g)
     {
-        Dimension size = compartment.getShapeSize().getDimension();
+    	DimensionEx size = compartment.getShapeSize();
 
         View text = new ComplexTextView( StringEscapeUtils.escapeHtml4( compartment.getTitle() ), viewOptions.getDefaultFont(),
                 viewOptions.getFontRegistry(), ComplexTextView.TEXT_ALIGN_CENTER, 30, g );
-        RectangularShape roundRect = new RoundRectangle2D.Float( 0, 0, size.width, size.height, 5, 5 );
-        Brush nodeBrush = getBrush( compartment, viewOptions.getAnalysisBrush() );
+        RectangularShape roundRect = new RoundRectangle2D.Float( 0, 0, size.getWidth(), size.getHeight(), 5, 5 );
+        Brush nodeBrush = getBrush( compartment, viewOptions.getCallBrush() );
         BoxView view = new BoxView( viewOptions.getAnalysisPen(), nodeBrush, roundRect );
         view.setLocation( compartment.getLocation() );
         view.setModel( compartment );
@@ -281,7 +280,8 @@ public class WDLViewBuilder extends DefaultDiagramViewBuilder
 
     protected boolean createExpressionCoreView(CompositeView container, Node node, WDLViewOptions diagramOptions, Graphics g)
     {
-        View text = new TextView( node.getName(), diagramOptions.getNodeTitleFont(), g );
+        ColorFont font = getTitleFont( node, diagramOptions.getExpressionFont() );
+        View text = new TextView( node.getName(), font, g );
         int d = 2;
         Rectangle r = text.getBounds();
 
@@ -353,9 +353,9 @@ public class WDLViewBuilder extends DefaultDiagramViewBuilder
         Pen pen = getBorderPen(node, diagramOptions.getDefaultPen());
         Brush mainBrush = getBrush( node, diagramOptions.getConditionalBrush() );
         Point location = node.getLocation();
-        Dimension size = node.getShapeSize().getDimension();
-        int width = size.width - 31;
-        int height = size.height - 26;
+        DimensionEx size = node.getShapeSize();
+        int width = size.getWidth();
+        int height = size.getHeight();
         View shadowView = new BoxView( pen, shadowBrush, location.x + 1, location.y + 1, width, height );
         View boxView = new BoxView( pen, mainBrush, location.x, location.y, width, height );
         boxView.setModel( node );
@@ -371,9 +371,9 @@ public class WDLViewBuilder extends DefaultDiagramViewBuilder
         Pen pen = getBorderPen(node, diagramOptions.getDefaultPen());
         Brush mainBrush = getBrush( node, new Brush( Color.white ) );
         Point location = node.getLocation();
-        Dimension size = node.getShapeSize().getDimension();
-        int width = size.width - 31;
-        int height = size.height - 26;
+        DimensionEx size = node.getShapeSize();
+        int width = size.getWidth() - 31;
+        int height = size.getHeight() - 26;
         View shadowView = new BoxView( pen, shadowBrush, location.x + 1, location.y + 1, width, height );
         View boxView = new BoxView( pen, mainBrush, location.x, location.y, width, height );
         boxView.setModel( node );
@@ -411,7 +411,7 @@ public class WDLViewBuilder extends DefaultDiagramViewBuilder
 
         return false;
     }
-
+    
     @Override
     public PortFinder getPortFinder(Node node)
     {

@@ -15,7 +15,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.logging.Logger;
 
-//import com.developmentontheedge.application.ApplicationUtils;
 import com.developmentontheedge.beans.DynamicProperty;
 import com.developmentontheedge.beans.Option;
 import com.developmentontheedge.beans.annot.PropertyName;
@@ -26,7 +25,6 @@ import biouml.model.Diagram;
 import biouml.model.DiagramElement;
 import biouml.model.Edge;
 import biouml.model.Node;
-import biouml.model.graph.DiagramToGraphTransformer;
 import biouml.plugins.wdl.Declaration;
 import biouml.plugins.wdl.WorkflowUtil;
 import biouml.plugins.wdl.parser.AstCall;
@@ -46,8 +44,8 @@ import biouml.plugins.wdl.parser.AstTask;
 import biouml.plugins.wdl.parser.AstVersion;
 import biouml.plugins.wdl.parser.AstWorkflow;
 import biouml.plugins.wdl.parser.WDLParser;
+import biouml.standard.type.DimensionEx;
 import biouml.standard.type.Stub;
-//import biouml.workbench.graph.DiagramToGraphTransformer;
 import one.util.streamex.StreamEx;
 import ru.biosoft.access.CollectionFactoryUtils;
 import ru.biosoft.access.core.DataCollection;
@@ -55,15 +53,15 @@ import ru.biosoft.access.core.DataElement;
 import ru.biosoft.access.core.DataElementImporter;
 import ru.biosoft.access.core.DataElementPath;
 import ru.biosoft.access.core.DataElementPutException;
-import ru.biosoft.graph.HierarchicLayouter;
-import ru.biosoft.graph.PathwayLayouter;
 import ru.biosoft.jobcontrol.FunctionJobControl;
 import ru.biosoft.util.ApplicationUtils;
 import ru.biosoft.util.bean.BeanInfoEx2;
 
 
+
 public class WDLImporter implements DataElementImporter
 {
+
     private WDLImportProperties properties = null;
     protected static final Logger log = Logger.getLogger( WDLImporter.class.getName() );
     private boolean doImportDiagram = false;
@@ -109,7 +107,7 @@ public class WDLImporter implements DataElementImporter
             if( jobControl != null )
                 jobControl.functionFinished();
 
-            layout( diagram );
+            WDLLayouter.layout( diagram );
             CollectionFactoryUtils.save( diagram );
 
             return diagram;
@@ -320,10 +318,10 @@ public class WDLImporter implements DataElementImporter
         for( Node node : diagram.recursiveStream().select( Node.class ) )
         {
             String expression = WorkflowUtil.getExpression( node );
-            if (expression == null)
+            if( expression == null )
                 continue;
-            
-            if (WorkflowUtil.isOutput( node ) || WorkflowUtil.isInput(node))
+
+            if( WorkflowUtil.isOutput( node ) || WorkflowUtil.isInput( node ) )
                 continue;
 
             List<String> args = WorkflowUtil.findPossibleArguments( expression );
@@ -466,6 +464,7 @@ public class WDLImporter implements DataElementImporter
         name = WDLSemanticController.uniqName( parent, name );
         Stub kernel = new Stub( null, name, WDLConstants.SCATTER_TYPE );
         Compartment c = new Compartment( parent, name, kernel );
+//        c.getAttributes() .add(DPSUtils.createHiddenReadOnly( Node.INNER_NODES_PORT_FINDER_ATTR, Boolean.class, true ));
         c.setShapeSize( new Dimension( 500, 300 ) );
         String variable = scatter.getVarible();
         AstExpression array = scatter.getArrayExpression();
@@ -725,11 +724,11 @@ public class WDLImporter implements DataElementImporter
         WorkflowUtil.setPosition( inNode, position );
         inNode.setFixed( true );
         Point parentLoc = parent.getLocation();
-        Dimension parentDim = parent.getShapeSize().getDimension();
+        DimensionEx parentDim = parent.getShapeSize();
         if( WDLConstants.INPUT_TYPE.equals( nodeType ) )
             inNode.setLocation( parentLoc.x + 2, parentLoc.y + position * 24 + 8 );
         else
-            inNode.setLocation( parentLoc.x + parentDim.width - 16 - 2, parentLoc.y + position * 24 + 8 );
+            inNode.setLocation( parentLoc.x + parentDim.getWidth() - 16 - 2, parentLoc.y + position * 24 + 8 );
         parent.put( inNode );
         return inNode;
     }
@@ -743,18 +742,4 @@ public class WDLImporter implements DataElementImporter
         e.getCompartment().put( e );
         return e;
     }
-
-    public void layout(Diagram diagram)
-    {
-        HierarchicLayouter layouter = new HierarchicLayouter();
-        layouter.setHoistNodes( true );
-        layouter.getSubgraphLayouter().layerDeltaY = 50;
-        ru.biosoft.graph.Graph graph = DiagramToGraphTransformer.generateGraph( diagram, null );
-        PathwayLayouter pathwayLayouter = new PathwayLayouter( layouter );
-        pathwayLayouter.doLayout( graph, null );
-        DiagramToGraphTransformer.applyLayout( graph, diagram );
-        diagram.setView( null );
-        diagram.getViewOptions().setAutoLayout( true );
-    }
-
 }
