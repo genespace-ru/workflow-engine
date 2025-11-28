@@ -6450,7 +6450,7 @@ function CellTypesViewPart()
 function WDLViewPart()
 {
     this.tabId = "diagram.wdl";
-    this.tabName = "WDL";
+    this.tabName = "Workflow";
     this.diagram = null;
     this.shown = "wdl_wdl";
     this.shownIndex = 0;
@@ -6469,12 +6469,15 @@ function WDLViewPart()
                 '<ul>'+
                 '<li><a href="#wdl_wdl"><span>WDL</span></a></li>'+
                 '<li><a href="#wdl_nextflow"><span>NextFlow</span></a></li>'+
+				'<li><a href="#wdl_cwl"><span>CWL</span></a></li>'+
                 '<li><a href="#wdl_settings"><span>Settings</span></a></li>'+
                 '</ul>'+
                 '<div id="wdl_wdl" class="complex_vp_container ui-tabs-panel ui-corner-bottom ui-widget-content">'+
                 '</div>'+
                 '<div id="wdl_nextflow" class="complex_vp_container ui-tabs-panel ui-corner-bottom ui-widget-content">'+
                 '</div>'+
+				'<div id="wdl_cwl" class="complex_vp_container ui-tabs-panel ui-corner-bottom ui-widget-content">'+
+				'</div>'+
                 '<div id="wdl_settings" class="complex_vp_container ui-tabs-panel ui-corner-bottom ui-widget-content">'+
                 '</div>'+
                 '</div>');
@@ -6492,6 +6495,9 @@ function WDLViewPart()
         
         this.nextflowDiv = tabDiv.find("#wdl_nextflow");
         this.scriptEditor["nextflow"] = this.initScriptEditor(this.nextflowDiv, "shell");
+		
+		this.cwlDiv = tabDiv.find("#wdl_cwl");
+		this.scriptEditor["cwl"] = this.initScriptEditor(this.cwlDiv, "shell");
         
         this.settingsDiv = tabDiv.find("#wdl_settings");
         this.settingsPI = $('<div id="' + this.tabId + '_pi"></div>').css({"width":"500px", "float":"left", "margin-right": "15px"});
@@ -6557,6 +6563,7 @@ function WDLViewPart()
                 this.diagram.addChangeListener(this);
                 this.needUpdate.wdl = true;
                 this.needUpdate.nextflow = true;
+				this.needUpdate.cwl = true;
                 //this.diagram2wdlActionClick();
             }
         }
@@ -6660,8 +6667,10 @@ function WDLViewPart()
         {
             _this.scriptEditor.wdl.editor.setValue(data.values.wdl);
             _this.scriptEditor.nextflow.editor.setValue(data.values.nextflow);
+			_this.scriptEditor.cwl.editor.setValue(data.values.cwl);
             _this.needUpdate["wdl"] = true;
             _this.needUpdate["nextflow"] = true;
+			_this.needUpdate["cwl"] = true;
         },
         function(data)
         {

@@ -9,6 +9,7 @@ import org.json.JSONObject;
 
 import biouml.model.Diagram;
 import biouml.model.server.WebDiagramsProvider;
+import biouml.plugins.wdl.CWLGenerator;
 import biouml.plugins.wdl.NextFlowGenerator;
 import biouml.plugins.wdl.NextFlowRunner;
 import biouml.plugins.wdl.WDLGenerator;
@@ -61,9 +62,11 @@ public class WDLWebProvider extends WebJSONProviderSupport
             Diagram diagram = WebDiagramsProvider.getDiagram( diagramPath.toString(), false );
             String wdl = new WDLGenerator().generate( diagram );
             String nextflow = new NextFlowGenerator().generate( diagram );
+            String cwl = new CWLGenerator().generate( diagram );
             JSONObject res = new JSONObject();
             res.put( "wdl", wdl );
             res.put( "nextflow", nextflow );
+            res.put( "cwl", cwl );
             response.sendJSON( res );
 
         }
