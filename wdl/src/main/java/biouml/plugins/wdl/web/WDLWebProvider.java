@@ -62,7 +62,15 @@ public class WDLWebProvider extends WebJSONProviderSupport
             Diagram diagram = WebDiagramsProvider.getDiagram( diagramPath.toString(), false );
             String wdl = new WDLGenerator().generate( diagram );
             String nextflow = new NextFlowGenerator().generate( diagram );
-            String cwl = new CWLGenerator().generate( diagram );
+            String cwl = "";
+            try
+            {
+             cwl = new CWLGenerator().generate( diagram );
+            }
+            catch (Exception ex)
+            {
+            	
+            }
             JSONObject res = new JSONObject();
             res.put( "wdl", wdl );
             res.put( "nextflow", nextflow );
