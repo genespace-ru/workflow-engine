@@ -181,7 +181,7 @@ function loadApplication(startupInfo)
         return message;
     };  
 
-    ping();
+    //ping();
     //ServerMessages.start();
 }
 

@@ -281,7 +281,7 @@ function startUpload(uploadID, file)
 	 * id and action should be url parameters (not FormData parameter) since in
 	 * the BioUML FormData parameters are processed only after file upload finishes
 	 */
-	xhr.open("POST", '/biouml/web/upload?fileID="'+ uploadID + '"&name="upload' + uploadID
+	xhr.open("POST", '/diagrams/web/upload?fileID="'+ uploadID + '"&name="upload' + uploadID
 			+ '" id="upload' + uploadID + '" enctype="multipart/form-data"');
 	xhr.send(data);
 	return xhr;
@@ -512,7 +512,7 @@ function detectFormatAndImport(uploadID, success, fail)
 			{
 				importDialogDiv.find("#importHideBlock").show();
             	$(":button:contains('Start')").removeAttr("disabled").attr("disabled", "disabled").addClass("ui-state-disabled");
-            	setProjectByCollection(getDataCollection(importPath));
+            	//setProjectByCollection(getDataCollection(importPath));
             	doImport(selectedFormat, uploadID, importID, propertyPane, importDialogDiv, success, fail);
 			}
 		}
@@ -535,38 +535,28 @@ function doImport(selectedFormat, uploadID, importID, propertyPane, importDialog
         propertyPane.updateModel();
         importProperties.json = convertDPSToJSON(propertyPane.getModel());
     }
-	queryBioUML(importURL, importProperties, function(data) {}, function(data)
+	queryBioUML(importURL, importProperties, function(data) {
+        var resultPath = data.values;
+        $("#"+uploadID+" .import").removeAttr("disabled").attr("disabled", "disabled").addClass("ui-state-disabled").html("Imported");
+        importsNumber = importsNumber + 1;
+        importDialogDiv.dialog("close");
+        importDialogDiv.remove();
+        if(vAutoOpen)
+            reopenDocument(resultPath);
+        refreshTreeBranch(getElementPath(resultPath));
+        openBranch(getElementPath(resultPath), false);
+        if( success )
+            success(uploadID);
+        if( vCallback )
+            vCallback(pathsToOpen);
+        
+    }, function(data)
 	{
     	logger.error(resources.dlgImportErrorImportFailed+"<br>"+data.message);
 		importDialogDiv.dialog("close");
 		importDialogDiv.remove();
-	});
-	var progressBar = progressBarTemplate.clone(true);
-	importDialogDiv.find("#importFileInfoBlock").empty().append(progressBar);
-	createProgressBar(progressBar, importID, function(status, msg, pathsToOpen) 
-	{
-		if (status == JobControl.COMPLETED) 
-		{
-			$("#"+uploadID+" .import").removeAttr("disabled").attr("disabled", "disabled").addClass("ui-state-disabled").html("Imported");
-			importsNumber = importsNumber + 1;
-			importDialogDiv.dialog("close");
-			importDialogDiv.remove();
-			if(vAutoOpen)
-				reopenDocument(pathsToOpen[0]);
-			refreshTreeBranch(getElementPath(pathsToOpen[0]));
-			openBranch(getElementPath(pathsToOpen[0]), false);
-			if( success )
-				success(uploadID);
-            if( vCallback )
-            	vCallback(pathsToOpen);
-		} else
-		{
-        	if(status == JobControl.TERMINATED_BY_ERROR) logger.error(resources.dlgImportErrorImportFailed+"<br>"+msg);
-			importDialogDiv.dialog("close");
-			importDialogDiv.remove();
-			if( fail )
-				fail(uploadID);
-		}
+        if( fail )
+            fail(uploadID);
 	});
 };
 
