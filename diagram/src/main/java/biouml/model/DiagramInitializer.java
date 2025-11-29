@@ -1,12 +1,9 @@
 package biouml.model;
 
-import java.util.Properties;
-
 import biouml.model.server.DiagramService;
 import biouml.model.server.WebDiagramsActionsProvider;
 import biouml.model.server.WebDiagramsProvider;
 import biouml.plugins.server.access.AccessService;
-//import ru.biosoft.access.DataElementImporterRegistry;
 import ru.biosoft.access.file.FileType;
 import ru.biosoft.access.file.FileTypePriority;
 import ru.biosoft.access.file.FileTypeRegistry;
@@ -84,12 +81,5 @@ public class DiagramInitializer extends Initializer
     protected void initCommonClasses()
     {
         AccessService.addCommonClass( "biouml.model.Diagram" );
-    }
-
-    @Override
-    protected void initImporters()
-    {
-    	AccessService.addCommonClass( "biouml.model.Diagram" );
-//        DataElementImporterRegistry.registerImporter( "DMLImporter", "biouml.model.util.DiagramDMLImporter", "BioUML format(*.dml)", null );
     }
 }
