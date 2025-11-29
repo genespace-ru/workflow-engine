@@ -718,7 +718,7 @@ public class WDLImporter implements DataElementImporter
     }
 
 
-    private Node addPort(String name, String nodeType, int position, Compartment parent) throws DataElementPutException
+    public static Node addPort(String name, String nodeType, int position, Compartment parent) throws DataElementPutException
     {
         Node inNode = new Node( parent, new Stub( parent, name, nodeType ) );
         WorkflowUtil.setPosition( inNode, position );
