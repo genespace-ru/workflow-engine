@@ -2,11 +2,11 @@ openDiagram.json
 openTable.json
 openFile.json
 openText.json
+openImage.json
 expand.json
 newDiagram.json
 newElement.json
 newFolder.json
-importWDL.json
 import.json
 saveas.json
 copyFolder.json
