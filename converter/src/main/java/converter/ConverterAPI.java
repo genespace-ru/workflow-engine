@@ -74,7 +74,7 @@ public class ConverterAPI
                     List<FileItem> formItems = upload.parseRequest(request);
                     if (formItems != null && formItems.size() > 0) {
                         for (FileItem item : formItems) {
-                            if (!item.isFormField()) {
+                            if (!item.isFormField() && !item.getName().isEmpty()) {
                                 String fileName = new File(item.getName()).getName();
                                 File destinationFile = new File(uploadPath, fileName);
                                 item.write(destinationFile.toPath());
@@ -96,7 +96,13 @@ public class ConverterAPI
                 {
                     arguments.put(TextUtil2.decodeURL(uriParameter), uriParameters.get(uriParameter));
                 }
-                
+                if(fileToConvert == null && arguments.get( "inputWdlText" ) != null)
+                {
+                    File dir = TempFiles.getTempDirectory();
+                    
+                    fileToConvert = new File(dir, "input.wdl");
+                    ApplicationUtils.writeString(fileToConvert, arguments.getOrDefault( "inputWdlText", "" ).toString());
+                }
                 if(fileToConvert != null)
                 {
                     String convertType = arguments.getOrDefault( "convertType", "diagram" ).toString();
