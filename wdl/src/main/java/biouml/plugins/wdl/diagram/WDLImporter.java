@@ -107,7 +107,7 @@ public class WDLImporter implements DataElementImporter
             if( jobControl != null )
                 jobControl.functionFinished();
 
-            WDLLayouter.layout( diagram );
+            new WDLLayouter().layout( diagram );
             CollectionFactoryUtils.save( diagram );
 
             return diagram;

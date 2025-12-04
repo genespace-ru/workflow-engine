@@ -213,7 +213,7 @@ public class NextFlowImporter
                 changeType(node, WDLConstants.INPUT_TYPE);
         }
 
-        WDLLayouter.layout(diagram);
+        new WDLLayouter().layout(diagram);
 
     }
 
