@@ -4,9 +4,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Map;
 
 import org.apache.commons.fileupload2.core.DiskFileItemFactory;
@@ -20,6 +22,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import ru.biosoft.access.core.Environment;
 import ru.biosoft.server.servlets.webservices.BiosoftWebResponse;
+import ru.biosoft.server.servlets.webservices.JSONResponse;
+import ru.biosoft.server.servlets.webservices.WebServicesServlet;
 import ru.biosoft.util.TempFiles;
 import ru.biosoft.util.TextUtil2;
 
@@ -64,11 +68,7 @@ public class ConverterAPI
 
                 DiskFileItemFactory factory = DiskFileItemFactory.builder().get();
                 JakartaServletFileUpload upload = new JakartaServletFileUpload(factory);
-                String uploadPath = UPLOAD_DIRECTORY;
-                File uploadDir = new File(uploadPath);
-                if (!uploadDir.exists()) {
-                    uploadDir.mkdir();
-                }
+                File uploadDir = getUploadFolder();
 
                 try {
                     List<FileItem> formItems = upload.parseRequest(request);
@@ -76,7 +76,7 @@ public class ConverterAPI
                         for (FileItem item : formItems) {
                             if (!item.isFormField() && !item.getName().isEmpty()) {
                                 String fileName = new File(item.getName()).getName();
-                                File destinationFile = new File(uploadPath, fileName);
+                                File destinationFile = new File(uploadDir, fileName);
                                 item.write(destinationFile.toPath());
                                 fileToConvert =  destinationFile;
                             }
@@ -89,7 +89,8 @@ public class ConverterAPI
                         }
                     }
                 } catch (Exception ex) {
-                    sendError(response, "There was an error: " + ex.getMessage());
+                    sendError(response, "Error parsing input arguments: " + ex.getMessage());
+                    return;
                 }
                 
                 for ( String uriParameter : uriParameters.keySet() )
@@ -106,7 +107,16 @@ public class ConverterAPI
                 if(fileToConvert != null)
                 {
                     String convertType = arguments.getOrDefault( "convertType", "diagram" ).toString();
-                    Diagram diagram = Converter.loadDiagram(fileToConvert.getAbsolutePath());
+                    Diagram diagram = null;
+                    try 
+                    {
+                        diagram = Converter.loadDiagram(fileToConvert.getAbsolutePath());
+                    }
+                    catch (Exception ex1)
+                    {
+                        sendError(response, "Error loading diagram from wdl: " + ex1.getMessage());
+                        return;
+                    }
                     File convertedFile = null;
                     String contentType = "text/xml";
                     String suffix = "";
@@ -118,8 +128,16 @@ public class ConverterAPI
                         {
                             suffix = ".png";
                             convertedFile = TempFiles.file("export_image"+suffix);
-                            Converter.exportImage(diagram, convertedFile);
-                            contentType = "image/x-png";
+                            try (FileOutputStream fos = new FileOutputStream( convertedFile ))
+                            {
+                                Converter.exportImage(diagram, convertedFile);
+                                contentType = "image/x-png";
+                            }
+                            catch(Exception ex1)
+                            {
+                                sendError(response, "Error writing diagram image: " + ex1.getMessage());
+                                return;
+                            }
                         }
                         else //plain diagram file
                         {
@@ -130,14 +148,28 @@ public class ConverterAPI
                                 writer.setStream( fos );
                                 writer.write( diagram );
                             }
+                            catch(Exception ex1)
+                            {
+                                sendError(response, "Error writing diagram file: " + ex1.getMessage());
+                                return;
+                            }
                         }
                     }
                     else if(convertType.equals( "nextflow" ))
                     {
                         suffix = ".nf";
                         convertedFile = TempFiles.file("export_nextflow.nf");
-                        String nextFlow = new NextFlowGenerator().generate(diagram);
-                        ApplicationUtils.writeString(convertedFile, nextFlow);
+                        try 
+                        {
+                            String nextFlow = new NextFlowGenerator().generate(diagram);
+                            ApplicationUtils.writeString(convertedFile, nextFlow);
+                        }
+                        catch(Exception ex1)
+                        {
+                            sendError(response, "Error converting to nextflow: " + ex1.getMessage());
+                            return;
+                        }
+                        
                     }
                     else
                     {
@@ -151,6 +183,10 @@ public class ConverterAPI
                         String fileName = ApplicationUtils.getFileNameWithoutExtension(fileToConvert.getName());
                         resp.setHeader("Content-Disposition", "attachment;filename=\"" + fileName + suffix + "\"");
                         resp.setHeader("Content-Length", String.valueOf(convertedFile.length()));
+                        resp.setHeader("Access-Control-Allow-Origin", "*");
+                        resp.setHeader("Access-Control-Allow-Credentials", "true");
+                        resp.setHeader("Access-Control-Allow-Methods", "POST, GET");
+                        resp.setHeader("Access-Control-Allow-Headers", "Content-Type");
                         resp.setContentType(contentType);
                         ApplicationUtils.copyStream(resp.getOutputStream(), new FileInputStream(convertedFile));
                         convertedFile.delete();
@@ -159,11 +195,15 @@ public class ConverterAPI
                     {
                         sendError(response, "Can not convert file " + fileToConvert.getName());
                     }
+                }            
+                else
+                {
+                    sendError(response, "No input data to convert");
                 }
             }
             else
             {
-                sendError(response, "Please, upload file for converting");
+                sendError(response, "Incorrect form data");
             }
         }
         catch(Exception e)
@@ -174,6 +214,31 @@ public class ConverterAPI
     
     private static void sendError(final HttpServletResponse response, final String errorMessage) throws IOException
     {
-        response.sendError(HttpServletResponse.SC_BAD_REQUEST, errorMessage);
+        response.setHeader("Access-Control-Allow-Origin", "*");
+        new JSONResponse(new BiosoftWebResponse(response, response.getOutputStream())).error(errorMessage);
+        //response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, errorMessage);
+    }
+    
+    private static synchronized File getUploadFolder()
+    {
+        SimpleDateFormat df = new SimpleDateFormat( "yyyyMMddHHmmssSSS" );
+        while(true)
+        {
+            String name = "upload_wdl_" + df.format( new Date() );
+            File tempFile = new File(UPLOAD_DIRECTORY, name);
+            if(!tempFile.exists())
+            {
+                tempFile.mkdir();
+                return tempFile;
+            }
+            try
+            {
+                Thread.sleep( 1 );
+            }
+            catch( InterruptedException e )
+            {
+                // ignore
+            }
+        }
     }
 }
