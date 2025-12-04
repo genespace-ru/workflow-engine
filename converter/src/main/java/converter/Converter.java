@@ -86,7 +86,7 @@ public class Converter
 
         AstStart start = new WDLParser().parse(new StringReader(text));
         Diagram diagram = importer.generateDiagram(start, null, "diagram");
-        WDLLayouter.layout( diagram );
+        new WDLLayouter().layout( diagram );
         return diagram;
     }
 
