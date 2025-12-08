@@ -55,6 +55,7 @@ import ru.biosoft.access.core.DataElementPath;
 import ru.biosoft.access.core.DataElementPutException;
 import ru.biosoft.jobcontrol.FunctionJobControl;
 import ru.biosoft.util.ApplicationUtils;
+import ru.biosoft.util.DPSUtils;
 import ru.biosoft.util.bean.BeanInfoEx2;
 
 
@@ -303,7 +304,7 @@ public class WDLImporter implements DataElementImporter
     public Node createExternalParameterNode(Compartment parent, AstDeclaration declaration)
     {
         String name = declaration.getName();
-        Stub kernel = new Stub( null, name, WDLConstants.EXTERNAL_PARAMETER_TYPE );
+        Stub kernel = new Stub( null, name, WDLConstants.WORKFLOW_INPUT_TYPE );
         Node node = new Node( parent, name, kernel );
         WorkflowUtil.setPosition( node, externalPosition++ );
         setDeclaration( node, declaration );

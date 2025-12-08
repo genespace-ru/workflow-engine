@@ -12,11 +12,14 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Logger;
 
+
 import biouml.model.Compartment;
 import biouml.model.Diagram;
 import one.util.streamex.StreamEx;
 import ru.biosoft.access.DataCollectionUtils;
 import ru.biosoft.access.core.DataCollection;
+import ru.biosoft.access.core.DataElement;
+import ru.biosoft.access.core.DataElementPath;
 import ru.biosoft.access.core.TextDataElement;
 import ru.biosoft.util.ApplicationUtils;
 
@@ -76,7 +79,7 @@ public class NextFlowRunner
             builder.directory( new File( outputDir ) );
         }
 
-        System.out.println("COMMAND: " + StreamEx.of(builder.command()).joining(" "));
+        System.out.println( "COMMAND: " + StreamEx.of( builder.command() ).joining( " " ) );
         Process process = builder.start();
 
         new Thread( new Runnable()
@@ -173,7 +176,7 @@ public class NextFlowRunner
             DataCollection nested = DataCollectionUtils.createSubCollection( dc.getCompletePath().getChildPath( folderName ) );
             for( File f : folder.listFiles() )
             {
-            	String data = ApplicationUtils.readAsString( f );
+                String data = ApplicationUtils.readAsString( f );
                 nested.put( new TextDataElement( f.getName(), nested, data ) );
             }
         }
@@ -187,8 +190,26 @@ public class NextFlowRunner
 
     public static Set<Diagram> getIncludes(Diagram diagram)
     {
-        Set<Diagram> result = StreamEx.of( WorkflowUtil.getImports( diagram ) ).map( f -> f.getSource().getDataElement() )
-                .select( Diagram.class ).toSet();
+        Set<Diagram> result = new HashSet<>();
+        for( ImportProperties ip : WorkflowUtil.getImports( diagram ) )
+        {
+            DataElementPath dep = ip.getSource();
+            if( dep != null )
+            {
+                DataElement de = dep.getDataElement();
+                if( de instanceof Diagram )
+                {
+                    result.add( (Diagram)de );
+                    continue;
+                }
+            }
+            String name = ip.getSourceName();
+            DataElement de = DataElementPath.create( diagram.getOrigin(), name ).getDataElement();
+            if( de instanceof Diagram )
+            {
+                result.add( (Diagram)de );
+            }
+        }
         Set<Diagram> additionals = new HashSet<Diagram>();
         for( Diagram d : result )
             additionals.addAll( getIncludes( d ) );

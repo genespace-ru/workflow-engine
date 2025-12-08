@@ -146,7 +146,7 @@ public class CWLParser
         {
             Map<String, Object> input = getMap( inputs, key );
             String type = getString( input, "type", "" );
-            createExpression( diagram, type, key, "", WDLConstants.EXTERNAL_PARAMETER_TYPE );
+            createExpression( diagram, type, key, "", WDLConstants.WORKFLOW_INPUT_TYPE );
         }
     }
 

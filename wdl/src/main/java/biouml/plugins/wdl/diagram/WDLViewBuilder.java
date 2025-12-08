@@ -64,7 +64,7 @@ public class WDLViewBuilder extends DefaultDiagramViewBuilder
         {
             return createInOutCoreView( container, node, diagramViewOptions, g, true );
         }
-        else if( WDLConstants.EXTERNAL_PARAMETER_TYPE.equals( type ) )
+        else if( WDLConstants.WORKFLOW_INPUT_TYPE.equals( type ) )
         {
             return createExternalParameter( container, node, diagramViewOptions, g );
         }
@@ -202,7 +202,7 @@ public class WDLViewBuilder extends DefaultDiagramViewBuilder
     
     protected boolean createTaskView(CompositeView container, Compartment compartment, WDLViewOptions viewOptions, Graphics g)
     {
-    	DimensionEx size = compartment.getShapeSize();
+        DimensionEx size = compartment.getShapeSize();
 
         View text = new ComplexTextView( StringEscapeUtils.escapeHtml4( compartment.getTitle() ), viewOptions.getDefaultFont(),
                 viewOptions.getFontRegistry(), ComplexTextView.TEXT_ALIGN_CENTER, 30, g );
@@ -219,7 +219,7 @@ public class WDLViewBuilder extends DefaultDiagramViewBuilder
 
     protected boolean createCommandCallView(CompositeView container, Compartment compartment, WDLViewOptions viewOptions, Graphics g)
     {
-    	DimensionEx size = compartment.getShapeSize();
+        DimensionEx size = compartment.getShapeSize();
 
         View text = new ComplexTextView( StringEscapeUtils.escapeHtml4( compartment.getTitle() ), viewOptions.getDefaultFont(),
                 viewOptions.getFontRegistry(), ComplexTextView.TEXT_ALIGN_CENTER, 30, g );
