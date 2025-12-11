@@ -540,9 +540,9 @@ public class WorkflowUtil
         return null;
     }
 
-    public static Node getCycleVariableNode(Compartment c)
+    public static Node getCycleVariableNode(Compartment cycle)
     {
-        for( Node node : c.getNodes() )
+        for( Node node : cycle.getNodes() )
         {
             if( isCycleVariable( node ) )
                 return node;

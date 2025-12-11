@@ -6,12 +6,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.TreeMap;
+
 import org.yaml.snakeyaml.Yaml;
 
 import com.developmentontheedge.beans.DynamicProperty;
 
 import biouml.model.Compartment;
-import biouml.model.DefaultSemanticController;
 import biouml.model.Diagram;
 import biouml.model.Node;
 import biouml.plugins.wdl.diagram.WDLConstants;
@@ -25,6 +28,9 @@ import ru.biosoft.util.ApplicationUtils;
 
 public class CWLParser
 {
+    private static final String $GRAPH = "$graph";
+    private static final String WORKFLOW = "Workflow";
+    private static final String COMMAND_LINE_TOOL = "CommandLineTool";
     private Diagram diagram;
 
     public Diagram loadDiagram(File f, DataCollection dc, String name) throws Exception
@@ -38,59 +44,63 @@ public class CWLParser
     {
         this.diagram = diagram;
         diagram.clear();
+        diagram.setNotificationEnabled( false );
         Map<String, Object> map = parseYaml( content );
-        List<Object> graph = getList( map, "$graph" );
-        for( Object element : graph )
-        {
-            processElement( element );
-        }
-        addRelations();
-        return diagram;
-    }
 
-    public void processElement(Object element) throws Exception
-    {
-        if( element instanceof Map )
+        if( map.containsKey( $GRAPH ) )
         {
-            Map<String, Object> map = (Map)element;
-            String clazz = getString( map, "class" );
-            switch( clazz )
-            {
-                case "Workflow":
-                {
-                    processWorkflow( map );
-                    break;
-                }
-                case "CommandLineTool":
-                {
-                    processCommandLineTool( map );
-                    break;
-                }
-            }
+            List<Object> graph = getList( map, $GRAPH );
+
+            for( Map tool : findObjects( graph, COMMAND_LINE_TOOL ) )
+                processCommandLineTool( tool );
+
+            for( Map tool : findObjects( graph, WORKFLOW ) )//TODO: what to do if several workflows
+                processWorkflow( tool );
         }
+        else
+        {
+            String name = diagram.getName();
+            if( name.contains( "." ) )
+                name = name.substring( 0, name.indexOf( "." ) );
+            if( isOfType( map, COMMAND_LINE_TOOL ) )
+                processCommandLineTool( name, map );
+            else if( isOfType( map, WORKFLOW ) )
+                processWorkflow( map );
+            else
+                throw new Exception( "Unknown class: " + getString( map, "class" ) );
+        }
+        createRelations();
+        diagram.setNotificationEnabled( true );
+        return diagram;
     }
 
     public void processCommandLineTool(Map<String, Object> process) throws Exception
     {
-        String id = getString( process, "id" );
+        processCommandLineTool( null, process );
+    }
+
+    public void processCommandLineTool(String id, Map<String, Object> process) throws Exception
+    {
+        if( id == null )
+            id = getString( process, "id" );
 
         Object baseCommand = process.get( "baseCommand" );
         List arguments = getList( process, "arguments" );
-
         Map<String, Object> inputs = getMap( process, "inputs" );
         Map<String, Object> outputs = getMap( process, "outputs" );
-        id = DefaultSemanticController.generateUniqueName( diagram, id );
-        Compartment task = new Compartment( diagram, new Stub( null, id, WDLConstants.TASK_TYPE ) );
+        String name = generateUniqueName( diagram, id );
+        Compartment task = new Compartment( diagram, new Stub( null, name, WDLConstants.TASK_TYPE ) );
+        task.setTitle( id );
         task.setNotificationEnabled( false );
-        WorkflowUtil.setCommand( task, processCommand( baseCommand, arguments ) );
+        task.setShapeSize( new Dimension( 200, 0 ) );
         int inputCount = 0;
         for( String inputName : inputs.keySet() )
         {
             Map<String, Object> input = getMap( inputs, inputName );
             String type = getString( input, "type", "" );
-            String portId = DefaultSemanticController.generateUniqueName( diagram, inputName );
+            String portId = generateUniqueName( task, inputName );
             Node port = WDLImporter.addPort( portId, WDLConstants.INPUT_TYPE, inputCount, task );
-            WorkflowUtil.setName( task, inputName );
+            WorkflowUtil.setName( port, inputName );
             WorkflowUtil.setType( port, toBioUMLType( type ) );
             WorkflowUtil.setExpression( port, "" );//TODO: default values
             inputCount++;
@@ -100,14 +110,19 @@ public class CWLParser
         {
             Map<String, Object> output = getMap( outputs, outputName );
             String type = getString( output, "type", "" );
-            String expression = getString( output, "outputBinding", "" );
-            String portId = DefaultSemanticController.generateUniqueName( diagram, outputName );
+            Map outputBinding = getMap( output, "outputBinding" );
+            String expression = getString( outputBinding, "glob", "" );
+            String portId = generateUniqueName( task, outputName );
             Node port = WDLImporter.addPort( portId, WDLConstants.OUTPUT_TYPE, outputCount, task );
-            WorkflowUtil.setName( task, outputName );
+            WorkflowUtil.setName( port, outputName );
             WorkflowUtil.setType( port, toBioUMLType( type ) );
             WorkflowUtil.setExpression( port, toBioUMLExpression( expression ) );
             outputCount++;
         }
+
+        String command = processCommand( baseCommand, arguments, inputs );
+        WorkflowUtil.setCommand( task, command );
+
         int maxPorts = Math.max( inputCount, outputCount );
         int height = Math.max( 50, 24 * maxPorts + 8 );
         task.setShapeSize( new Dimension( 200, height ) );
@@ -116,8 +131,16 @@ public class CWLParser
         diagram.put( task );
     }
 
-    public String processCommand(Object baseCommand, List<Object> arguments) throws Exception
+    //    Map<String, Object> inputBinding = getMap( process, "inputBinding" );
+    //    String position = getString( inputBinding, "position" );
+    //    if( position != null )
+    //    {
+    //        int positonInCommand = Integer.parseInt( position );
+    //        inputsInCommand.put( inputName, positonInCommand );
+    //    }
+    public String processCommand(Object baseCommand, List<Object> arguments, Map<String, Object> inputs) throws Exception
     {
+        Map<Integer, List<String>> args = new TreeMap<>();
         //special case
         if( arguments.size() == 2 && arguments.get( 0 ).equals( "-c" ) && arguments.get( 1 ) instanceof Map )
         {
@@ -126,10 +149,47 @@ public class CWLParser
             else
                 return baseCommand.toString() + " " + ( (Map)arguments.get( 1 ) ).get( "valueFrom" ).toString();
         }
-        String args = StreamEx.of( arguments ).joining( " " );
+
+        for( String inputName : inputs.keySet() )
+        {
+            Map input = getMap( inputs, inputName );
+            String inputType = getString( input, "type" );
+            Map<String, Object> inputBinding = getMap( input, "inputBinding" );
+            String positionStr = getString( inputBinding, "position" );
+            int position = Integer.parseInt( positionStr );
+            args.computeIfAbsent( position, i -> new ArrayList<>() ).add( inputName );
+        }
+
+        for( Object argument : arguments )
+        {
+            int position = 0;
+            String argumentString = null;
+            if( argument instanceof String )
+                argumentString = argument.toString();
+            else if( argument instanceof Map )
+            {
+                Map<String, Object> argumentMap = (Map)argument;
+                String prefix = getString( argumentMap, "prefix" );
+                String value = getString( argumentMap, "valueFrom" );
+                position = getInteger( argumentMap, "position", 0 );
+                if( prefix != null )
+                    argumentString = prefix + " " + value;
+                else
+                    argumentString = value;
+            }
+            if( argumentString != null )
+                args.computeIfAbsent( position, i -> new ArrayList<>() ).add( argumentString );
+        }
+
+        StringBuilder inputStringBuilder = new StringBuilder();
+        for( Entry<Integer, List<String>> inputEntry : args.entrySet() )
+        {
+            inputStringBuilder.append( StreamEx.of( inputEntry.getValue() ).joining( " " ) );
+        }
+
         if( baseCommand instanceof List )
             baseCommand = StreamEx.of( (List)baseCommand ).joining( " " );
-        return baseCommand + " " + args;
+        return baseCommand + " " + inputStringBuilder.toString();
     }
 
     public void processWorkflow(Map<String, Object> workflow) throws Exception
@@ -173,7 +233,7 @@ public class CWLParser
 
     public Node createExpression(Compartment parent, String type, String name, String expression, String expressionType)
     {
-        String id = DefaultSemanticController.generateUniqueName( diagram, name );
+        String id = generateUniqueName( parent, name );
         Node node = new Node( diagram, new Stub( diagram, id, expressionType ) );
         WorkflowUtil.setType( node, toBioUMLType( type ) );
         WorkflowUtil.setName( node, name );
@@ -190,19 +250,23 @@ public class CWLParser
         String taskRef = getString( callMap, "run" );
         if( taskRef.startsWith( "#" ) )
             taskRef = taskRef.substring( 1 );
-        
+
         Compartment task = (Compartment)diagram.findNode( taskRef );
-        String id = DefaultSemanticController.generateUniqueName( diagram, name );
+        String id = generateUniqueName( parent, name );
         Compartment call = new Compartment( parent, new Stub( null, id, WDLConstants.CALL_TYPE ) );
         call.setShapeSize( new Dimension( 200, 0 ) );
         call.setNotificationEnabled( false );
         WorkflowUtil.setTaskRef( call, taskRef );
+        WorkflowUtil.setCallName( call, name );
         int inputCount = 0;
         for( String inKey : inMap.keySet() )
         {
             String value = inMap.get( inKey ).toString();
-            String portId = DefaultSemanticController.generateUniqueName( diagram, name );
+            String portId = generateUniqueName( parent, inKey );
             Node port = WDLImporter.addPort( portId, WDLConstants.INPUT_TYPE, inputCount++, call );
+            Node originalPort = task.findNode( inKey );
+            WorkflowUtil.setType( port, WorkflowUtil.getType( originalPort ) );
+            WorkflowUtil.setPosition( port, WorkflowUtil.getPosition( originalPort ) );
             WorkflowUtil.setExpression( port, toBioUMLExpression( value ) );
             WorkflowUtil.setName( port, inKey );
         }
@@ -212,9 +276,13 @@ public class CWLParser
             if( out instanceof String )
             {
                 String value = out.toString();
-                String portId = DefaultSemanticController.generateUniqueName( diagram, value );
+                String portId = generateUniqueName( diagram, value );
                 Node port = WDLImporter.addPort( portId, WDLConstants.OUTPUT_TYPE, outputCount++, call );
+                Node originalPort = task.findNode( value );
                 WorkflowUtil.setName( port, value );
+                WorkflowUtil.setType( port, WorkflowUtil.getType( originalPort ) );
+                WorkflowUtil.setPosition( port, WorkflowUtil.getPosition( originalPort ) );
+                WorkflowUtil.setExpression( port, toBioUMLExpression( value ) );
             }
             else
                 throw new Exception( "Unknown out type: " + out );
@@ -229,7 +297,7 @@ public class CWLParser
         return call;
     }
 
-    public void addRelations()
+    public void createRelations()
     {
         for( Compartment c : WorkflowUtil.getCalls( diagram ) )
         {
@@ -258,7 +326,7 @@ public class CWLParser
             String[] parts = expression.split( "\\." );
             String sourceCallName = parts[0];
             String sourcePortName = parts[1];
-            Node sourceCall = diagram.findNode( sourceCallName );
+            Node sourceCall = WorkflowUtil.findCall( sourceCallName, diagram );
             Node sourcePort = (Node) ( (Compartment)sourceCall ).get( sourcePortName );
             WDLImporter.createLink( sourcePort, node, WDLConstants.LINK_TYPE );
         }
@@ -285,6 +353,36 @@ public class CWLParser
         return null;
     }
 
+    public static int getInteger(Map<String, Object> map, String name, int defaultValue)
+    {
+        Object obj = map.get( name );
+        if( obj == null )
+            return defaultValue;
+        try
+        {
+            return Integer.parseInt( obj.toString() );
+        }
+        catch( Exception ex )
+        {
+            return defaultValue;
+        }
+    }
+    
+    public static boolean getBoolean(Map<String, Object> map, String name, boolean defaultValue)
+    {
+        Object obj = map.get( name );
+        if( obj == null )
+            return defaultValue;
+        try
+        {
+            return Boolean.parseBoolean( obj.toString() );
+        }
+        catch( Exception ex )
+        {
+            return defaultValue;
+        }
+    }
+
     public static Map<String, Object> getMap(Map<String, Object> map, String name)
     {
         Object obj = map.get( name );
@@ -304,6 +402,8 @@ public class CWLParser
     public static String toBioUMLExpression(String cwlExpression)
     {
         String result = cwlExpression.replace( "/", "." );
+        if( result.startsWith( "glob:" ) )
+            result = result.replace( "glob:", "" ).trim();
         return result;
     }
 
@@ -333,5 +433,33 @@ public class CWLParser
         Map<?, ?> rootMap = (Map<?, ?>)root;
         System.out.println( rootMap );
         return (Map<String, Object>)rootMap;
+    }
+
+    public static StreamEx<Map> findObjects(List<Object> graph, String type)
+    {
+        return StreamEx.of( graph ).select( Map.class ).filter( m -> isOfType( m, type ) );
+    }
+
+    public static boolean isOfType(Map map, String type)
+    {
+        return type.equals( getString( map, "class" ) );
+    }
+
+    public static String generateUniqueName(Compartment compartment, String baseName)
+    {
+        Set<String> names = compartment.stream().map( de -> de.getName() ).toSet();
+
+        int index = 1;
+
+        if( !names.contains( baseName ) )
+            return baseName;
+
+        String result = baseName + "_" + index;
+        while( names.contains( result ) )
+        {
+            index++;
+            result = baseName + "_" + index;
+        }
+        return result;
     }
 }

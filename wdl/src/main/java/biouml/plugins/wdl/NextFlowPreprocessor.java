@@ -61,8 +61,10 @@ public class NextFlowPreprocessor
         for( Node node : result.recursiveStream().select( Node.class ) )
         {
             String expression = WorkflowUtil.getExpression( node );
+            
             if( expression != null && !expression.isEmpty() )
             {
+//                expression =processCallName(node, expression);
                 expression = processArrayElements( result, expression );
                 expression = removeGlobs( expression );
                 expression = processTernary( expression );
@@ -71,6 +73,21 @@ public class NextFlowPreprocessor
             }
         }
         return result;
+    }
+    
+    
+    String processCallName(Node node, String expression)
+    {
+        for (Node source: WorkflowUtil.getSources( node ))
+        {
+            Compartment parent = source.getCompartment();
+            if (WorkflowUtil.isCall( parent ))
+            {
+                String callName = WorkflowUtil.getCallName( parent );
+                expression = expression.replace( callName+".", "result_"+callName+"." );
+            }
+        }
+        return expression;
     }
 
     public String preprocess(String s) throws Exception
@@ -86,7 +103,7 @@ public class NextFlowPreprocessor
     public static Set<String> findSeps(String input)
     {
         Set<String> result = new HashSet<>();
-        String regex = "~\\{sep=\" \" ([a-zA-Z_][a-zA-Z0-9_]*)}";
+        String regex = "~\\{sep=([\"'])\\s*\\1 ([a-zA-Z_][a-zA-Z0-9_]*)}";
         Pattern pattern = Pattern.compile( regex );
         Matcher matcher = pattern.matcher( input );
         while( matcher.find() )
@@ -126,6 +143,10 @@ public class NextFlowPreprocessor
     {
         String content = map.trim();
         if( content.startsWith( "{" ) && content.endsWith( "}" ) && content.contains( ":" ) )
+        {
+            return map.replace( "{", "[" ).replace( "}", "]" );
+        }
+        else if ( content.startsWith( "[" ) && content.endsWith( "]" ) && content.contains( ":" ) )
         {
             return map.replace( "{", "[" ).replace( "}", "]" );
         }
