@@ -78,4 +78,21 @@ def read_int(filePath) {
 def read_float(filePath) {
     return new File(filePath).text.trim() as Float
 }
+
+def numerate(ch) {
+    def counter = -1
+    return ch.map { sublist ->
+        counter++
+        tuple(counter, sublist)
+    }
+}
+
+def combineAll(inputs) {
+    if (inputs.size() == 0) {
+        return Channel.empty()
+    }
+    
+    return inputs.drop(1).inject(toChannel(inputs[0])) { result, input ->
+        result.combine(toChannel(input))
+    }
 }
