@@ -25,7 +25,6 @@ ${BR}if ( $helper.findCondition($conditional) ) {
 #end
 #######################################################################################
 #macro(callNF $call)
-##if ($helper.isInsideCycle($call))$helper.prepareInputs($call)#end
 #set ($inputs = $helper.getOrderedInputs($call))
   $helper.getResultName($call) = $helper.getCallName($call)( #foreach($input in $inputs)$helper.getCallInputName($input)#comma($inputs) #end)$BR
 #end
