@@ -10,6 +10,14 @@ def ceil(val) {
 	return Math.ceil(val)
 }
 
+def get(arr, index) {
+    if (arr instanceof java.util.List || arr instanceof java.util.Map) {
+        return arr[index]
+    }
+    else {
+        return arr.collect().map{v->v[index]}
+    }
+}
 
 def length(arr) {
     if (arr instanceof java.util.List)
@@ -38,7 +46,7 @@ def getDefault(x, y) {
     }
 }
 
-def createChannelIfNeeded(arr)
+def toChannel(arr)
 {
     if (arr instanceof java.util.List)
         return Channel.of(arr).flatten()
@@ -48,7 +56,7 @@ def createChannelIfNeeded(arr)
 
 def select_first(arr)
 {
-	return list.find { it != null && it != '' }
+	return arr.find { it != null && it != '' }
 }
 
 def select_all(array) {
@@ -57,4 +65,34 @@ def select_all(array) {
 
 def defined(val) {
     return val != null
+}
+
+def read_string(filePath) {
+    return new File(filePath).text.trim()
+}
+
+def read_int(filePath) {
+    return new File(filePath).text.trim() as Integer
+}
+
+def read_float(filePath) {
+    return new File(filePath).text.trim() as Float
+}
+
+def numerate(ch) {
+    def counter = -1
+    return ch.map { sublist ->
+        counter++
+        tuple(counter, sublist)
+    }
+}
+
+def combineAll(inputs) {
+    if (inputs.size() == 0) {
+        return Channel.empty()
+    }
+    
+    return inputs.drop(1).inject(toChannel(inputs[0])) { result, input ->
+        result.combine(toChannel(input))
+    }
 }
