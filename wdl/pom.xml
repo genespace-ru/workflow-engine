@@ -4,6 +4,7 @@
 
  <groupId>ru.biosoft.diagrams</groupId>
  <artifactId>wdl</artifactId>
+ <version>1.0.0-SNAPSHOT</version>
  <packaging>jar</packaging>
 
  <name>WDL</name>
