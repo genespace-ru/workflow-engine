@@ -9,11 +9,10 @@ import ru.biosoft.util.ApplicationUtils;
 
 public class TestNextflowRunner
 {
-    public static String LIMS_TEST_HEMATOLOGY = "C:/Users/Damag/git/lims-test-hemotology";
-    public static String NEXTFLOW_PATH = LIMS_TEST_HEMATOLOGY+"/workflows/fastqc.nf";
-    public static String PROJECT_DIR_ARGUMENT = "C:/Users/Damag/git/lims-test-hemotology/projects/test-hematology";
-    
+    public static String NEXTFLOW_PATH = "C:/Users/Damag/git/lims-test-hemotology/workflows/fastqc.nf";
     public static String OUTPUT_DIR = "C:/Users/Damag/lims"; 
+    
+    public static String PROJECT_DIR_ARGUMENT = "/mnt/c/Users/Damag/git/lims-test-hemotology/projects/test-hematology";
             
     public static void main(String ... args) throws Exception
     {
@@ -22,11 +21,10 @@ public class TestNextflowRunner
         Map<String, Object> params = new HashMap<>();
         params.put("projectDir", PROJECT_DIR_ARGUMENT);
         
-        String towerAddress = null;
+        String towerAddress = "http://172.24.112.1:8200/nf";
         boolean isWindows = System.getProperty( "os.name" ).startsWith( "Windows" );
         String outputDir = OUTPUT_DIR; 
                 
-        NextFlowRunner.runNextFlow("test", params, nextFlowScript, outputDir, isWindows, towerAddress);
-
+        NextFlowRunner.runNextFlow("1", "test", params, nextFlowScript, outputDir, isWindows, towerAddress);
     }
 }

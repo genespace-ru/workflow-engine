@@ -42,40 +42,33 @@ public class NextFlowRunner
         return result;
     }
 
-    public static void runNextFlow(String name, Map<String, Object> parameters, String nextFlowScript, String outputDir, boolean useWsl,
-            String towerAddress) throws Exception
+    public static void runNextFlow(String id, String name, Map<String, Object> parameters, String nextFlowScript, String outputDir,
+            boolean useWsl, String towerAddress) throws Exception
     {
         File dir = new File(outputDir);
         dir.mkdirs();
         String parent = new File(outputDir).getAbsolutePath().replace("\\", "/");
-        parameters = linkParameters(parameters, dir);
         File config = generateConfig(name, parameters, outputDir);
 
         File f = new File(outputDir, name + ".nf");
         ApplicationUtils.writeString(f, nextFlowScript);
 
-        String[] baseCommand = new String[] {"nextflow", f.getName(), "-c", config.getName()};
-        String[] wslCommand = new String[] {"wsl", "--cd", parent};
-        String[] towerCommand = new String[] {"-with-tower", "\'" + towerAddress + "\'"};
+        String command = "export TOWER_WORKFLOW_ID=1 ; export TOWER_ACCESS_TOKEN=zzz ; nextflow " + f.getName() + " -c " + config.getName()
+                + " -with-tower \'" + towerAddress + "\'";
 
-        List<String> command = new ArrayList<>();
+        List<String> baseCommand;
 
         if( useWsl )
-            command.addAll(StreamEx.of(wslCommand).toList());
-
-        command.addAll(StreamEx.of(baseCommand).toList());
-
-        if( towerAddress != null )
-            command.addAll(StreamEx.of(towerCommand).toList());
-
-        ProcessBuilder builder = new ProcessBuilder(command.stream().toArray(String[]::new));
-
+            baseCommand = List.of("wsl", "--cd", parent, "bash", "-c", command);
+        else
+            baseCommand = List.of("bash", "-c", "cd " + parent + " && " + command);
+  
+        ProcessBuilder pb = new ProcessBuilder(baseCommand);
         if( !useWsl )
-            builder.directory(new File(outputDir));
+            pb.directory(new File(outputDir));
 
-        System.out.println("COMMAND: " + StreamEx.of(builder.command()).joining(" "));
-        Process process = builder.start();
-
+        System.out.println("COMMAND: " + StreamEx.of(pb.command()).joining(" "));
+        Process process = pb.start();
         executeProcess(process);
     }
 
@@ -178,6 +171,9 @@ public class NextFlowRunner
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(config)))
         {
             bw.write("docker.enabled = true");
+            bw.write("\n");
+            ;
+            bw.write("workDir = '/tmp/nf-work'");
             for( Entry<String, Object> e : parameters.entrySet() )
             {
 
