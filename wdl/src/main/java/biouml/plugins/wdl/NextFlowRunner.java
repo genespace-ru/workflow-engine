@@ -53,7 +53,7 @@ public class NextFlowRunner
         File f = new File(outputDir, name + ".nf");
         ApplicationUtils.writeString(f, nextFlowScript);
 
-        String command = "export TOWER_WORKFLOW_ID=1 ; export TOWER_ACCESS_TOKEN=zzz ; nextflow " + f.getName() + " -c " + config.getName()
+        String command = "export TOWER_WORKFLOW_ID=" + id + " ; export TOWER_ACCESS_TOKEN=zzz ; nextflow " + f.getName() + " -c " + config.getName()
                 + " -with-tower \'" + towerAddress + "\'";
 
         List<String> baseCommand;
