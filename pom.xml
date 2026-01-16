@@ -1,34 +1,104 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
- xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-   http://maven.apache.org/xsd/maven-4.0.0.xsd">
- <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+    http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>ru.biosoft</groupId>
+    <artifactId>diagrams</artifactId>
+    <version>1.0.0</version>
+    <url>https://github.com/genespace-ru/workflow-engine</url>
+    <name>Workflow engine</name>
+    <description>Workflow engine supporting WDL diagrams</description>
+    
+    <licenses>
+        <license>
+            <name>GNU Affero General Public License (AGPL) version 3.0</name>
+            <url>https://www.gnu.org/licenses/agpl-3.0.txt</url>
+        </license>
+    </licenses>
 
- <groupId>ru.biosoft</groupId>
- <artifactId>diagrams</artifactId>
- <version>1.0.0-SNAPSHOT</version>
- <packaging>pom</packaging>
+    <developers>
+        <developer>
+            <organization>Biosoft.Ru LLC</organization>
+            <organizationUrl>https://github.com/Biosoft-ru</organizationUrl>
+        </developer>
+    </developers>
 
- <modules>
-  <!--module>server</module-->
-  <module>diagram</module>
-  <module>wdl</module>
-  <module>converter</module>
-  <module>webapps</module>
-  
- </modules>
-
- <properties>
-  <maven.deploy.skip>true</maven.deploy.skip>
- </properties>
- 
- <build>
-  <plugins>
-    <plugin>
-      <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-maven-plugin</artifactId>
-        <version>11.0.24</version>
-        <!--version>9.4.48.v20220622</version-->
-      </plugin>
-   </plugins>
-</build>
+    <scm>
+        <connection>scm:git:git://github.com/genespace-ru/workflow-engine.git</connection>
+        <developerConnection>
+            scm:git:ssh://github.com/genespace-ru/workflow-engine.git</developerConnection>
+        <url>https://github.com/genespace-ru/workflow-engine</url>
+    </scm>
+    <packaging>pom</packaging>
+    <modules>
+        <!--module>server</module-->
+        <module>diagram</module>
+        <module>wdl</module>
+        <module>converter</module>
+        <module>webapps</module>
+    </modules>
+    <properties>
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+    
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-maven-plugin</artifactId>
+                <version>11.0.24</version>
+                <!--version>9.4.48.v20220622</version-->
+            </plugin>
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>0.5.0</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <publishingServerId>central</publishingServerId>
+                    <autoPublish>true</autoPublish>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>1.6</version>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <doclint>none</doclint>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

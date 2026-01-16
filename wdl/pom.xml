@@ -4,11 +4,11 @@
 
  <groupId>ru.biosoft.diagrams</groupId>
  <artifactId>wdl</artifactId>
- <version>1.0.0-SNAPSHOT</version>
+ <version>1.0.0</version>
  <packaging>jar</packaging>
 
  <name>WDL</name>
- <description>Core classes for representation and visulisation od diagrams.</description>
+ <description>WDL script processing and converting to diagrams and nextflow</description>
 
  <properties>
    <encoding>UTF-8</encoding>
@@ -19,7 +19,7 @@
   <parent>
   <groupId>ru.biosoft</groupId>
   <artifactId>diagrams</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>1.0.0</version>
  </parent>
 
  <dependencies>
@@ -33,7 +33,7 @@
    <dependency>
     <groupId>ru.biosoft.diagrams</groupId>
     <artifactId>diagram</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>[1.0.0,)</version>
    </dependency>
 
   <dependency>

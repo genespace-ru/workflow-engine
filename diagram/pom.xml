@@ -4,11 +4,11 @@
 
  <groupId>ru.biosoft.diagrams</groupId>
  <artifactId>diagram</artifactId>
- <version>1.0.0-SNAPSHOT</version>
+ <version>1.0.0</version>
  <packaging>jar</packaging>
 
  <name>Diagram plugins</name>
- <description>Core classes for representation and visulisation od diagrams.</description>
+ <description>Core classes for representation and visulisation of diagrams.</description>
 
  <properties>
    <encoding>UTF-8</encoding>
@@ -19,12 +19,10 @@
   <parent>
   <groupId>ru.biosoft</groupId>
   <artifactId>diagrams</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>1.0.0</version>
  </parent>
 
  <dependencies>
-   
-  
 
   <dependency>
     <groupId>ru.biosoft.access</groupId>
