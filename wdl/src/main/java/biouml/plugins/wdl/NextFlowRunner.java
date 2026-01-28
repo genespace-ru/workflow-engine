@@ -43,7 +43,7 @@ public class NextFlowRunner
     }
 
     public static void runNextFlow(String id, String name, Map<String, Object> parameters, String nextFlowScript, String outputDir,
-            boolean useWsl, String towerAddress) throws Exception
+            boolean useWsl, String towerAddress, GeneSpaceContext context) throws Exception
     {
         File dir = new File(outputDir);
         dir.mkdirs();

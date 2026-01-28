@@ -25,6 +25,6 @@ public class TestNextflowRunner
         boolean isWindows = System.getProperty( "os.name" ).startsWith( "Windows" );
         String outputDir = OUTPUT_DIR; 
                 
-        NextFlowRunner.runNextFlow("1", "test", params, nextFlowScript, outputDir, isWindows, towerAddress);
+        NextFlowRunner.runNextFlow("1", "test", params, nextFlowScript, outputDir, isWindows, towerAddress, null);
     }
 }
