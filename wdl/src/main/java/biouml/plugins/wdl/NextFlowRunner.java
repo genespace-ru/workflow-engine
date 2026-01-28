@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
@@ -31,337 +32,391 @@ import ru.biosoft.util.ApplicationUtils;
 
 public class NextFlowRunner
 {
-    private static final String BIOUML_FUNCTIONS_NF = "resources/biouml_function.nf";
-    private static final Logger log = Logger.getLogger(NextFlowRunner.class.getName());
+	private static final String BIOUML_FUNCTIONS_NF = "resources/biouml_function.nf";
+	private static final Logger log = Logger.getLogger(NextFlowRunner.class.getName());
 
-    public static File generateFunctions(String outputDir) throws IOException
-    {
-        InputStream inputStream = NextFlowRunner.class.getResourceAsStream(BIOUML_FUNCTIONS_NF);
-        File result = new File(outputDir, "biouml_function.nf");
-        Files.copy(inputStream, result.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        return result;
-    }
+	public static File generateFunctions(String outputDir) throws IOException
+	{
+		InputStream inputStream = NextFlowRunner.class.getResourceAsStream(BIOUML_FUNCTIONS_NF);
+		File result = new File(outputDir, "biouml_function.nf");
+		Files.copy(inputStream, result.toPath(), StandardCopyOption.REPLACE_EXISTING);
+		return result;
+	}
 
-    public static void runNextFlow(String id, String name, Map<String, Object> parameters, String nextFlowScript, String outputDir,
-            boolean useWsl, String towerAddress, GeneSpaceContext context) throws Exception
-    {
-        File dir = new File(outputDir);
-        dir.mkdirs();
-        String parent = new File(outputDir).getAbsolutePath().replace("\\", "/");
-        File config = generateConfig(name, parameters, outputDir);
+	public static void runNextFlow(String id, String name, Map<String, Object> parameters, String nextFlowScript, String outputDir,
+			boolean useWsl, boolean useDocker, String towerAddress, GeneSpaceContext context) throws Exception
+	{
+		File dir = new File(outputDir);
+		dir.mkdirs();
+		String parent = new File(outputDir).getAbsolutePath().replace("\\", "/");
+		File config = generateConfig(name, parameters, outputDir, useDocker);
 
-        File f = new File(outputDir, name + ".nf");
-        ApplicationUtils.writeString(f, nextFlowScript);
+		File f = new File(outputDir, name + ".nf");
+		ApplicationUtils.writeString(f, nextFlowScript);
 
-        String command = "export TOWER_WORKFLOW_ID=" + id + " ; export TOWER_ACCESS_TOKEN=zzz ; nextflow " + f.getName() + " -c " + config.getName()
-                + " -with-tower \'" + towerAddress + "\'";
+		String command = "export TOWER_WORKFLOW_ID=" + id + " ; export TOWER_ACCESS_TOKEN=zzz ; nextflow " + f.getName() + " -c " + config.getName()
+		+ " -with-tower \'" + towerAddress + "\'";
 
-        List<String> baseCommand;
+		List<String> baseCommand;
 
-        if( useWsl )
-            baseCommand = List.of("wsl", "--cd", parent, "bash", "-c", command);
-        else
-            baseCommand = List.of("bash", "-c", "cd " + parent + " && " + command);
-  
-        ProcessBuilder pb = new ProcessBuilder(baseCommand);
-        if( !useWsl )
-            pb.directory(new File(outputDir));
+		if( useWsl )
+			baseCommand = List.of("wsl", "--cd", parent, "bash", "-c", command);
+		else
+			baseCommand = List.of("bash", "-c", "cd " + parent + " && " + command);
 
-        System.out.println("COMMAND: " + StreamEx.of(pb.command()).joining(" "));
-        Process process = pb.start();
-        executeProcess(process);
-    }
+		ProcessBuilder pb = new ProcessBuilder(baseCommand);
+		if( !useWsl )
+			pb.directory(new File(outputDir));
 
-    public static void executeProcess(Process process) throws Exception
-    {
-        CommandRunner r = new CommandRunner(process);
-        Thread thread = new Thread(r);
-        thread.start();
-        process.waitFor();
-    }
+		System.out.println("COMMAND: " + StreamEx.of(pb.command()).joining(" "));
+		Process process = pb.start();
+		executeProcess(process);
+	}
 
-    private static class CommandRunner implements Runnable
-    {
-        Process process;
+	private static ProcessBuilder getNextflowDockerProcessBuilder(String nextFlowScript, String nextFlowConfig, String id,  
+			String towerAddress, GeneSpaceContext context) {
 
-        public CommandRunner(Process process)
-        {
-            this.process = process;
-        }
+		String containerName = "nf-" + id;
+		String workDir = "/nf-work";
 
-        public void log(BufferedReader input) throws IOException
-        {
-            String line = null;
-            while( ( line = input.readLine() ) != null )
-            {
-                System.out.println(line);
-                log.info(line);
-            }
-        }
+		List<String> cmd = new ArrayList<>();
+		cmd.add("docker");
+		cmd.add("run");
+		cmd.add("--rm");
+		cmd.add("--name");
+		cmd.add(containerName);
 
-        public void run()
-        {
-            BufferedReader input = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            try
-            {
-                log(input);
-            }
-            catch( IOException e )
-            {
-                e.printStackTrace();
-            }
-            BufferedReader err = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-            try
-            {
-                log(err);
-            }
-            catch( IOException e )
-            {
-                e.printStackTrace();
-            }
-        }
-    }
+		cmd.add("-e");
+		cmd.add("TOWER_WORKFLOW_ID=" + id);
+		cmd.add("-e");
+		cmd.add("TOWER_ACCESS_TOKEN=zzz");
+		cmd.add("-w");
+		cmd.add(workDir);
 
-    public static Map<String, Object> linkParameters(Map<String, Object> parameters, File dir)
-    {
-        Map<String, Object> result = new HashMap<>();
-        for( Entry<String, Object> e : parameters.entrySet() )
-        {
-            try
-            {
-                Object value = e.getValue();
-                result.put(e.getKey(), e.getValue());
-                if( value instanceof String )
-                {
-                    File f = new File((String)value);
-                    //                    Path link =Files.createLink(Path.of(dir.getAbsolutePath(), f.getName()), f.toPath());
-                    File copy = copyFile(f, dir);
-                    result.put(e.getKey(), "./" + copy.getName());
-                }
-            }
-            catch( Exception ex )
-            {
-                ex.printStackTrace();
-            }
+		cmd.add("-v");
+		cmd.add(dockerVolume(context.getProjectDir(), "/projects"));
+		cmd.add("-v");
+		cmd.add(dockerVolume(context.getGenomeDir(), "/references"));
+		cmd.add("-v");
+		cmd.add(dockerVolume(context.getWorkflowsDir(), "/workflows"));
 
-        }
-        return result;
-    }
+		cmd.add("nextflow/nextflow:25.10.3");
+		cmd.add("nextflow");
+		cmd.add(nextFlowScript);
+		cmd.add("-c");
+		cmd.add(workDir + "/" + nextFlowConfig);
 
-    public static File copyFile(File src, File targetDir) throws Exception
-    {
-        File dest = new File(targetDir, src.getName());
-        if( src.isFile() )
-        {
-            ApplicationUtils.copyFile(dest, src, null);
-        }
-        else if( src.isDirectory() )
-        {
-            dest.mkdir();
-            for( File f : src.listFiles() )
-                copyFile(f, dest);
-        }
-        return dest;
-    }
+		ProcessBuilder pb = new ProcessBuilder(cmd);
 
-    public static File generateConfig(String name, Map<String, Object> parameters, String outputDir) throws Exception
-    {
-        File config = new File(outputDir, name + ".config");
+		return pb;
 
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(config)))
-        {
-            bw.write("docker.enabled = true");
-            bw.write("\n");
-            ;
-            bw.write("workDir = '/tmp/nf-work'");
-            for( Entry<String, Object> e : parameters.entrySet() )
-            {
+	}
+	
+	static String dockerVolume(Path host, String container) {
+		return host.toAbsolutePath().toString().replace("\\", "/") + ":" + container;
+	}
 
-                String value = ( e.getValue() instanceof String ) ? "\"" + e.getValue() + "\"" : e.getValue().toString();
-                bw.write("\n");
-                bw.write("params." + e.getKey() + " = " + value + "\n");
-            }
-        }
-        return config;
-    }
+	public static void executeProcess(Process process) throws Exception
+	{
+		CommandRunner r = new CommandRunner(process);
+		Thread thread = new Thread(r);
+		thread.start();
+		process.waitFor();
+	}
 
-    public static String runNextFlow(Diagram diagram, String nextFlowScript, WorkflowSettings settings, String outputDir, boolean useWsl)
-            throws Exception
-    {
-        if( settings.getOutputPath() == null )
-            throw new InvalidParameterException("Output path not specified");
+	private static class CommandRunner implements Runnable
+	{
+		Process process;
 
-        new File(outputDir).mkdirs();
-        DataCollectionUtils.createSubCollection(settings.getOutputPath());
+		public CommandRunner(Process process)
+		{
+			this.process = process;
+		}
 
-        File config = new File(outputDir, "nextflow.config");
-        ApplicationUtils.writeString(config, "docker.enabled = true");
+		public void log(BufferedReader input) throws IOException
+		{
+			String line = null;
+			while( ( line = input.readLine() ) != null )
+			{
+				System.out.println(line);
+				log.info(line);
+			}
+		}
 
-        File json = settings.generateParametersJSON(outputDir);
+		public void run()
+		{
+			BufferedReader input = new BufferedReader(new InputStreamReader(process.getInputStream()));
+			try
+			{
+				log(input);
+			}
+			catch( IOException e )
+			{
+				e.printStackTrace();
+			}
+			BufferedReader err = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+			try
+			{
+				log(err);
+			}
+			catch( IOException e )
+			{
+				e.printStackTrace();
+			}
+		}
+	}
 
-        settings.exportCollections(outputDir);
+	public static Map<String, Object> linkParameters(Map<String, Object> parameters, File dir)
+	{
+		Map<String, Object> result = new HashMap<>();
+		for( Entry<String, Object> e : parameters.entrySet() )
+		{
+			try
+			{
+				Object value = e.getValue();
+				result.put(e.getKey(), e.getValue());
+				if( value instanceof String )
+				{
+					File f = new File((String)value);
+					//                    Path link =Files.createLink(Path.of(dir.getAbsolutePath(), f.getName()), f.toPath());
+					File copy = copyFile(f, dir);
+					result.put(e.getKey(), "./" + copy.getName());
+				}
+			}
+			catch( Exception ex )
+			{
+				ex.printStackTrace();
+			}
 
-        generateFunctions(outputDir);
+		}
+		return result;
+	}
 
-        exportIncludes(diagram, outputDir);
+	public static File copyFile(File src, File targetDir) throws Exception
+	{
+		File dest = new File(targetDir, src.getName());
+		if( src.isFile() )
+		{
+			ApplicationUtils.copyFile(dest, src, null);
+		}
+		else if( src.isDirectory() )
+		{
+			dest.mkdir();
+			for( File f : src.listFiles() )
+				copyFile(f, dest);
+		}
+		return dest;
+	}
 
-        if( nextFlowScript == null )
-            nextFlowScript = new NextFlowGenerator().generate(diagram);
-        NextFlowPreprocessor preprocessor = new NextFlowPreprocessor();
-        nextFlowScript = preprocessor.preprocess(nextFlowScript);
+	public static File generateConfig(String name, Map<String, Object> parameters, String outputDir, boolean useDocker) throws Exception
+	{
+		File config = new File(outputDir, name + ".config");
 
-        String name = diagram.getName();
-        File f = new File(outputDir, name + ".nf");
-        ApplicationUtils.writeString(f, nextFlowScript);
+		try (BufferedWriter bw = new BufferedWriter(new FileWriter(config)))
+		{
+			bw.write("docker.enabled = true");
+			bw.write("\n");
+			;
+			bw.write("workDir = '/tmp/nf-work'");
+			for( Entry<String, Object> e : parameters.entrySet() )
+			{
 
-        ProcessBuilder builder;
-        if( useWsl )
-        {
-            String parent = new File(outputDir).getAbsolutePath().replace("\\", "/");
-            builder = new ProcessBuilder("wsl", "--cd", parent, "nextflow", f.getName(), "-c", "nextflow.config", "-params-file",
-                    json.getName());
-        }
-        else
-        {
-            builder = new ProcessBuilder("nextflow", f.getName(), "-c", "nextflow.config", "-params-file", json.getName());
-            builder.directory(new File(outputDir));
-        }
+				String value;
+				if ( e.getValue() instanceof String ) {
+					value = "\"" + e.getValue() + "\"";
+				} 
+				else if ( e.getValue() instanceof Path ) {
+					value = "\"" + Path.of("/").resolve( (Path) e.getValue() ).toString() + "\"";
+				}
+				else
+				{
+					value = e.getValue().toString();
+				}
+				value = ( e.getValue() instanceof String ) ? "\"" + e.getValue() + "\"" : e.getValue().toString();
+				bw.write("\n");
+				bw.write("params." + e.getKey() + " = " + value + "\n");
+			}
+		}
+		return config;
+	}
 
-        System.out.println("COMMAND: " + StreamEx.of(builder.command()).joining(" "));
-        Process process = builder.start();
+	public static String runNextFlow(Diagram diagram, String nextFlowScript, WorkflowSettings settings, String outputDir, boolean useWsl)
+			throws Exception
+	{
+		if( settings.getOutputPath() == null )
+			throw new InvalidParameterException("Output path not specified");
 
-        new Thread(new Runnable()
-        {
-            public void run()
-            {
-                BufferedReader input = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                String line = null;
+		new File(outputDir).mkdirs();
+		DataCollectionUtils.createSubCollection(settings.getOutputPath());
 
-                try
-                {
-                    while( ( line = input.readLine() ) != null )
-                        log.info(line);
-                }
-                catch( IOException e )
-                {
-                    e.printStackTrace();
-                }
-                //                
-                //for some reason cwl-runner outputs everything into error stream
-                BufferedReader err = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-                line = null;
+		File config = new File(outputDir, "nextflow.config");
+		ApplicationUtils.writeString(config, "docker.enabled = true");
 
-                try
-                {
-                    while( ( line = err.readLine() ) != null )
-                        log.info(line);
-                }
-                catch( IOException e )
-                {
-                    e.printStackTrace();
-                }
-            }
-        }).start();
+		File json = settings.generateParametersJSON(outputDir);
 
-        process.waitFor();
-        importResults(diagram, settings, outputDir);
-        return "";
-        //        StreamGobbler inputReader = new StreamGobbler( process.getInputStream(), true );
-        //        StreamGobbler errorReader = new StreamGobbler( process.getErrorStream(), true );
-        //        process.waitFor();
-        //
-        //        if( process.exitValue() == 0 )
-        //        {
-        //            String logString = "";
-        //            String outStr = inputReader.getData();
-        //            if( !outStr.isEmpty() )
-        //            {
-        //                logString += outStr;
-        //                log.info( outStr );
-        //            }
-        //            //for some reason cwl-runner outputs everything into error stream
-        //            String errorStr = errorReader.getData();
-        //            if( !errorStr.isEmpty() )
-        //            {
-        //                logString += errorStr;
-        //                log.info( errorStr );
-        //            }
-        //            importResults( diagram, settings, outputDir );
-        //            return logString;
-        //        }
-        //        else
-        //        {
-        //            String errorStr = errorReader.getData();
-        //            log.info( errorStr );
-        //            throw new Exception( "Nextflow executed with error: " + errorStr );
-        //        }
+		settings.exportCollections(outputDir);
 
-    }
+		generateFunctions(outputDir);
 
-    public static void importResults(Diagram diagram, WorkflowSettings settings, String outputDir) throws Exception
-    {
-        if( settings.getOutputPath() == null )
-            return;
-        DataCollection dc = settings.getOutputPath().getDataCollection();
+		exportIncludes(diagram, outputDir);
 
-        for( Compartment n : WorkflowUtil.getAllCalls(diagram) )
-        {
-            if( WorkflowUtil.getDiagramRef(n) != null )
-            {
-                String ref = WorkflowUtil.getDiagramRef(n);
-                Diagram externalDiagram = (Diagram)diagram.getOrigin().get(ref);
-                importResults(externalDiagram, settings, outputDir);
-                continue;
-            }
-            String taskRef = WorkflowUtil.getTaskRef(n);
-            String folderName = ( taskRef );
-            File folder = new File(outputDir, folderName);
-            if( !folder.exists() || !folder.isDirectory() )
-            {
-                log.info("No results for " + n.getName());
-                continue;
-            }
-            DataCollection nested = DataCollectionUtils.createSubCollection(dc.getCompletePath().getChildPath(folderName));
-            for( File f : folder.listFiles() )
-            {
-                String data = ApplicationUtils.readAsString(f);
-                nested.put(new TextDataElement(f.getName(), nested, data));
-            }
-        }
-    }
+		if( nextFlowScript == null )
+			nextFlowScript = new NextFlowGenerator().generate(diagram);
+		NextFlowPreprocessor preprocessor = new NextFlowPreprocessor();
+		nextFlowScript = preprocessor.preprocess(nextFlowScript);
 
-    public static void exportIncludes(Diagram diagram, String outputDir) throws Exception
-    {
-        for( Diagram d : getIncludes(diagram) )
-            WorkflowUtil.export(d, new File(outputDir));
-    }
+		String name = diagram.getName();
+		File f = new File(outputDir, name + ".nf");
+		ApplicationUtils.writeString(f, nextFlowScript);
 
-    public static Set<Diagram> getIncludes(Diagram diagram)
-    {
-        Set<Diagram> result = new HashSet<>();
-        for( ImportProperties ip : WorkflowUtil.getImports(diagram) )
-        {
-            DataElementPath dep = ip.getSource();
-            if( dep != null )
-            {
-                DataElement de = dep.getDataElement();
-                if( de instanceof Diagram )
-                {
-                    result.add((Diagram)de);
-                    continue;
-                }
-            }
-            String name = ip.getSourceName();
-            DataElement de = DataElementPath.create(diagram.getOrigin(), name).getDataElement();
-            if( de instanceof Diagram )
-            {
-                result.add((Diagram)de);
-            }
-        }
-        Set<Diagram> additionals = new HashSet<Diagram>();
-        for( Diagram d : result )
-            additionals.addAll(getIncludes(d));
-        result.addAll(additionals);
-        return result;
-    }
+		ProcessBuilder builder;
+		if( useWsl )
+		{
+			String parent = new File(outputDir).getAbsolutePath().replace("\\", "/");
+			builder = new ProcessBuilder("wsl", "--cd", parent, "nextflow", f.getName(), "-c", "nextflow.config", "-params-file",
+					json.getName());
+		}
+		else
+		{
+			builder = new ProcessBuilder("nextflow", f.getName(), "-c", "nextflow.config", "-params-file", json.getName());
+			builder.directory(new File(outputDir));
+		}
+
+		System.out.println("COMMAND: " + StreamEx.of(builder.command()).joining(" "));
+		Process process = builder.start();
+
+		new Thread(new Runnable()
+		{
+			public void run()
+			{
+				BufferedReader input = new BufferedReader(new InputStreamReader(process.getInputStream()));
+				String line = null;
+
+				try
+				{
+					while( ( line = input.readLine() ) != null )
+						log.info(line);
+				}
+				catch( IOException e )
+				{
+					e.printStackTrace();
+				}
+				//                
+				//for some reason cwl-runner outputs everything into error stream
+				BufferedReader err = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+				line = null;
+
+				try
+				{
+					while( ( line = err.readLine() ) != null )
+						log.info(line);
+				}
+				catch( IOException e )
+				{
+					e.printStackTrace();
+				}
+			}
+		}).start();
+
+		process.waitFor();
+		importResults(diagram, settings, outputDir);
+		return "";
+		//        StreamGobbler inputReader = new StreamGobbler( process.getInputStream(), true );
+		//        StreamGobbler errorReader = new StreamGobbler( process.getErrorStream(), true );
+		//        process.waitFor();
+		//
+		//        if( process.exitValue() == 0 )
+		//        {
+		//            String logString = "";
+		//            String outStr = inputReader.getData();
+		//            if( !outStr.isEmpty() )
+		//            {
+		//                logString += outStr;
+		//                log.info( outStr );
+		//            }
+		//            //for some reason cwl-runner outputs everything into error stream
+		//            String errorStr = errorReader.getData();
+		//            if( !errorStr.isEmpty() )
+		//            {
+		//                logString += errorStr;
+		//                log.info( errorStr );
+		//            }
+		//            importResults( diagram, settings, outputDir );
+		//            return logString;
+		//        }
+		//        else
+		//        {
+		//            String errorStr = errorReader.getData();
+		//            log.info( errorStr );
+		//            throw new Exception( "Nextflow executed with error: " + errorStr );
+		//        }
+
+	}
+
+	public static void importResults(Diagram diagram, WorkflowSettings settings, String outputDir) throws Exception
+	{
+		if( settings.getOutputPath() == null )
+			return;
+		DataCollection dc = settings.getOutputPath().getDataCollection();
+
+		for( Compartment n : WorkflowUtil.getAllCalls(diagram) )
+		{
+			if( WorkflowUtil.getDiagramRef(n) != null )
+			{
+				String ref = WorkflowUtil.getDiagramRef(n);
+				Diagram externalDiagram = (Diagram)diagram.getOrigin().get(ref);
+				importResults(externalDiagram, settings, outputDir);
+				continue;
+			}
+			String taskRef = WorkflowUtil.getTaskRef(n);
+			String folderName = ( taskRef );
+			File folder = new File(outputDir, folderName);
+			if( !folder.exists() || !folder.isDirectory() )
+			{
+				log.info("No results for " + n.getName());
+				continue;
+			}
+			DataCollection nested = DataCollectionUtils.createSubCollection(dc.getCompletePath().getChildPath(folderName));
+			for( File f : folder.listFiles() )
+			{
+				String data = ApplicationUtils.readAsString(f);
+				nested.put(new TextDataElement(f.getName(), nested, data));
+			}
+		}
+	}
+
+	public static void exportIncludes(Diagram diagram, String outputDir) throws Exception
+	{
+		for( Diagram d : getIncludes(diagram) )
+			WorkflowUtil.export(d, new File(outputDir));
+	}
+
+	public static Set<Diagram> getIncludes(Diagram diagram)
+	{
+		Set<Diagram> result = new HashSet<>();
+		for( ImportProperties ip : WorkflowUtil.getImports(diagram) )
+		{
+			DataElementPath dep = ip.getSource();
+			if( dep != null )
+			{
+				DataElement de = dep.getDataElement();
+				if( de instanceof Diagram )
+				{
+					result.add((Diagram)de);
+					continue;
+				}
+			}
+			String name = ip.getSourceName();
+			DataElement de = DataElementPath.create(diagram.getOrigin(), name).getDataElement();
+			if( de instanceof Diagram )
+			{
+				result.add((Diagram)de);
+			}
+		}
+		Set<Diagram> additionals = new HashSet<Diagram>();
+		for( Diagram d : result )
+			additionals.addAll(getIncludes(d));
+		result.addAll(additionals);
+		return result;
+	}
 }
