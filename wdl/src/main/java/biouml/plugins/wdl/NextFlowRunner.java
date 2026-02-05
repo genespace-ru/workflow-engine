@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
@@ -43,41 +44,64 @@ public class NextFlowRunner
 		return result;
 	}
 
-	public static void runNextFlow(String id, String name, Map<String, Object> parameters, String nextFlowScript, String outputDir,
+    public static void runNextFlow(String id, String name, Map<String, Object> parameters, String nextFlowScript,
 			boolean useWsl, boolean useDocker, String towerAddress, GeneSpaceContext context) throws Exception
 	{
-		File dir = new File(outputDir);
-		dir.mkdirs();
-		String parent = new File(outputDir).getAbsolutePath().replace("\\", "/");
-		File config = generateConfig(name, parameters, outputDir, useDocker);
+        File outputDir = context.getOutputDir().toFile();
+        outputDir.mkdirs();
+        File config = generateConfig( name, parameters, outputDir, useDocker, context );
 
 		File f = new File(outputDir, name + ".nf");
 		ApplicationUtils.writeString(f, nextFlowScript);
 
-		String command = "export TOWER_WORKFLOW_ID=" + id + " ; export TOWER_ACCESS_TOKEN=zzz ; nextflow " + f.getName() + " -c " + config.getName()
-		+ " -with-tower \'" + towerAddress + "\'";
-
-		List<String> baseCommand;
-
-		if( useWsl )
-			baseCommand = List.of("wsl", "--cd", parent, "bash", "-c", command);
-		else
-			baseCommand = List.of("bash", "-c", "cd " + parent + " && " + command);
-
-		ProcessBuilder pb = new ProcessBuilder(baseCommand);
-		if( !useWsl )
-			pb.directory(new File(outputDir));
+        ProcessBuilder pb = null;
+        if( useDocker )
+            pb = getNextflowDockerProcessBuilder( f.getName(), config.getName(), id, towerAddress, context );
+        else
+            pb = getNextflowLocalProcessBuilder( f.getName(), config.getName(), id, towerAddress, context, useWsl );
 
 		System.out.println("COMMAND: " + StreamEx.of(pb.command()).joining(" "));
 		Process process = pb.start();
 		executeProcess(process);
 	}
 
-	private static ProcessBuilder getNextflowDockerProcessBuilder(String nextFlowScript, String nextFlowConfig, String id,  
+    /*
+     * Run nextflow as local process in Windows or Unix
+     */
+    private static ProcessBuilder getNextflowLocalProcessBuilder(String nextFlowScriptName, String nextFlowConfig, String id, String towerAddress, GeneSpaceContext context,
+            boolean useWsl)
+    {
+
+        String parent = context.getOutputDir().toAbsolutePath().toString().replace( "\\", "/" );
+        String command = "export TOWER_WORKFLOW_ID=" + id + " ; export TOWER_ACCESS_TOKEN=zzz ; nextflow " + nextFlowScriptName + " -c " + nextFlowConfig;
+        if( towerAddress != null )
+            command += " -with-tower \'" + towerAddress + "\'";
+
+        List<String> baseCommand;
+
+        if( useWsl )
+            baseCommand = List.of( "wsl", "--cd", parent, "bash", "-c", command );
+        else
+            baseCommand = List.of( "bash", "-c", "cd " + parent + " && " + command );
+
+        ProcessBuilder pb = new ProcessBuilder( baseCommand );
+        if( !useWsl )
+            pb.directory( context.getOutputDir().toFile() );
+        return pb;
+
+    }
+
+    /*
+     * Run nextflow as docker container in Unix. All paths should be mapped into container as SAME paths. Otherwise if
+     * nextflow script contains inner docker tools, they will not see the paths.
+     * 4 folders with user projects, workflows, supporting data and working folder (can be temporary) are mapped into container. 
+     * All inputs/results/used items should be descendants of one of the 4 folders above. 
+     */
+    private static ProcessBuilder getNextflowDockerProcessBuilder(String nextFlowScriptName, String nextFlowConfig, String id,
 			String towerAddress, GeneSpaceContext context) {
 
 		String containerName = "nf-" + id;
-		String workDir = "/nf-work";
+        String workDir = context.getOutputDir().toString();//"/nf-work";
 
 		List<String> cmd = new ArrayList<>();
 		cmd.add("docker");
@@ -86,25 +110,57 @@ public class NextFlowRunner
 		cmd.add("--name");
 		cmd.add(containerName);
 
-		cmd.add("-e");
-		cmd.add("TOWER_WORKFLOW_ID=" + id);
-		cmd.add("-e");
-		cmd.add("TOWER_ACCESS_TOKEN=zzz");
-		cmd.add("-w");
-		cmd.add(workDir);
 
-		cmd.add("-v");
-		cmd.add(dockerVolume(context.getProjectDir(), "/projects"));
-		cmd.add("-v");
-		cmd.add(dockerVolume(context.getGenomeDir(), "/references"));
-		cmd.add("-v");
-		cmd.add(dockerVolume(context.getWorkflowsDir(), "/workflows"));
+		cmd.add("-w");
+        cmd.add( context.getOutputDir().toString() );
+        if( towerAddress != null )
+        {
+            cmd.add( "-e" );
+            cmd.add( "TOWER_WORKFLOW_ID=" + id );
+            cmd.add( "-e" );
+            cmd.add( "TOWER_ACCESS_TOKEN=zzz" );
+
+        }
+
+        cmd.add( "-v" );
+        cmd.add( dockerVolume( Paths.get( "/var/run/docker.sock" ), "/var/run/docker.sock" ) );
+
+        if( context.getProjectsDir() != null )
+        {
+            cmd.add( "-v" );
+            cmd.add( dockerVolume( context.getProjectsDir(), context.getProjectsDir().toString() ) );
+        }
+
+        if( context.getGenomeDir() != null )
+        {
+            cmd.add( "-v" );
+            cmd.add( dockerVolume( context.getGenomeDir(), context.getGenomeDir().toString() ) );
+        }
+
+        if( context.getWorkflowsDir() != null )
+        {
+            cmd.add( "-v" );
+            cmd.add( dockerVolume( context.getWorkflowsDir(), context.getWorkflowsDir().toString() ) );
+        }
+
+        if( context.getOutputDir() != null )
+        {
+            cmd.add( "-v" );
+            cmd.add( dockerVolume( context.getOutputDir(), context.getOutputDir().toString() ) );
+        }
 
 		cmd.add("nextflow/nextflow:25.10.3");
 		cmd.add("nextflow");
-		cmd.add(nextFlowScript);
+        cmd.add( "run" );
+        cmd.add( nextFlowScriptName );
 		cmd.add("-c");
 		cmd.add(workDir + "/" + nextFlowConfig);
+
+        if( towerAddress != null )
+        {
+            cmd.add( "-with-tower" );
+            cmd.add( "\'" + towerAddress + "\'" );
+        }
 
 		ProcessBuilder pb = new ProcessBuilder(cmd);
 
@@ -208,7 +264,7 @@ public class NextFlowRunner
 		return dest;
 	}
 
-	public static File generateConfig(String name, Map<String, Object> parameters, String outputDir, boolean useDocker) throws Exception
+    public static File generateConfig(String name, Map<String, Object> parameters, File outputDir, boolean useDocker, GeneSpaceContext context) throws Exception
 	{
 		File config = new File(outputDir, name + ".config");
 
@@ -216,8 +272,8 @@ public class NextFlowRunner
 		{
 			bw.write("docker.enabled = true");
 			bw.write("\n");
-			;
-			bw.write("workDir = '/tmp/nf-work'");
+
+            //bw.write("workDir = '/tmp/nf-work'");
 			for( Entry<String, Object> e : parameters.entrySet() )
 			{
 
@@ -226,19 +282,65 @@ public class NextFlowRunner
 					value = "\"" + e.getValue() + "\"";
 				} 
 				else if ( e.getValue() instanceof Path ) {
-					value = "\"" + Path.of("/").resolve( (Path) e.getValue() ).toString() + "\"";
+                    value = "\"" + resolvePath( (Path) e.getValue(), context, useDocker ).toString() + "\"";
 				}
 				else
 				{
 					value = e.getValue().toString();
 				}
-				value = ( e.getValue() instanceof String ) ? "\"" + e.getValue() + "\"" : e.getValue().toString();
+                //value = ( e.getValue() instanceof String ) ? "\"" + e.getValue() + "\"" : e.getValue().toString();
 				bw.write("\n");
 				bw.write("params." + e.getKey() + " = " + value + "\n");
 			}
 		}
 		return config;
 	}
+
+    private static Path resolvePath(Path original, GeneSpaceContext context, boolean useDocker)
+    {
+        //        if( !useDocker )
+        //            return Path.of( "/" ).resolve( original );
+        //
+        //        if( context.getProjectsDir() != null )
+        //        {
+        //            Path prj = context.getProjectsDir();
+        //            if( original.startsWith( prj ) )
+        //            {
+        //                Path relative = prj.relativize( original );
+        //                return Path.of( "/projects" ).resolve( relative );
+        //            }
+        //        }
+        //
+        //        if( context.getGenomeDir() != null )
+        //        {
+        //            Path path = context.getGenomeDir();
+        //            if( original.startsWith( path ) )
+        //            {
+        //                Path relative = path.relativize( original );
+        //                return Path.of( "/references" ).resolve( relative );
+        //            }
+        //        }
+        //
+        //        if( context.getWorkflowsDir() != null )
+        //        {
+        //            Path path = context.getWorkflowsDir();
+        //            if( original.startsWith( path ) )
+        //            {
+        //                Path relative = path.relativize( original );
+        //                return Path.of( "/workflows" ).resolve( relative );
+        //            }
+        //        }
+        //        if( context.getOutputDir() != null )
+        //        {
+        //            Path path = context.getOutputDir();
+        //            if( original.startsWith( path ) )
+        //            {
+        //                Path relative = path.relativize( original );
+        //                return Path.of( "/nf-work" ).resolve( relative );
+        //            }
+        //        }
+        return Path.of( "/" ).resolve( original );
+    }
 
 	public static String runNextFlow(Diagram diagram, String nextFlowScript, WorkflowSettings settings, String outputDir, boolean useWsl)
 			throws Exception

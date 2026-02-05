@@ -5,28 +5,30 @@ import java.nio.file.Path;
 public class GeneSpaceContext
 {
     //Path to all user projects
-    protected Path projectDir;
+    protected Path projectsDir;
     //Path to worklfows 
     protected Path workflowsDir;
     //Path to supporting data like genome references
     protected Path genomeDir;
+    //Path to folder where process run will be performed
+    protected Path outputDir;
 
-    public GeneSpaceContext(Path projectDir, Path workflowsDir, Path genomeDir)
+    public GeneSpaceContext(Path projectDir, Path workflowsDir, Path genomeDir, Path outputDir)
     {
-        super();
-        this.projectDir = projectDir;
+        this.projectsDir = projectDir;
         this.workflowsDir = workflowsDir;
         this.genomeDir = genomeDir;
+        this.outputDir = outputDir;
     }
 
-    public Path getProjectDir()
+    public Path getProjectsDir()
     {
-        return projectDir;
+        return projectsDir;
     }
 
     public void setProjectDir(Path projectDir)
     {
-        this.projectDir = projectDir;
+        this.projectsDir = projectDir;
     }
 
     public Path getWorkflowsDir()
@@ -47,6 +49,16 @@ public class GeneSpaceContext
     public void setGenomeDir(Path genomeDir)
     {
         this.genomeDir = genomeDir;
+    }
+
+    public Path getOutputDir()
+    {
+        return outputDir;
+    }
+
+    public void setOutputDir(Path outputDir)
+    {
+        this.outputDir = outputDir;
     }
 
 }

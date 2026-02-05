@@ -4,7 +4,7 @@
 
  <groupId>ru.biosoft.diagrams</groupId>
  <artifactId>diagram</artifactId>
- <version>1.0.0</version>
+ <version>1.0.1</version>
  <packaging>jar</packaging>
 
  <name>Diagram plugins</name>
@@ -19,7 +19,7 @@
   <parent>
   <groupId>ru.biosoft</groupId>
   <artifactId>diagrams</artifactId>
-  <version>1.0.0</version>
+  <version>1.0.1</version>
  </parent>
 
  <dependencies>

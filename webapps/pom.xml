@@ -4,14 +4,14 @@
   <groupId>ru.biosoft.diagrams</groupId>
   <artifactId>webapps</artifactId>
   <packaging>war</packaging>
-  <version>1.0.0</version>
+  <version>1.0.1</version>
   <name>Diagrams webapp</name>
   <description>WebApp of the diagrams project</description>
   
   <parent>
     <groupId>ru.biosoft</groupId>
     <artifactId>diagrams</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
   </parent>
   
   <properties>
@@ -43,19 +43,19 @@
     <dependency>
         <groupId>ru.biosoft.diagrams</groupId>
         <artifactId>diagram</artifactId>
-        <version>[1.0.0,)</version>
+        <version>1.0.0</version>
     </dependency>
     
     <dependency>
         <groupId>ru.biosoft.diagrams</groupId>
         <artifactId>wdl</artifactId>
-        <version>[1.0.0,)</version>
+        <version>1.0.0</version>
     </dependency>
     
     <dependency>
         <groupId>ru.biosoft.diagrams</groupId>
         <artifactId>converter</artifactId>
-        <version>[1.0.0,)</version>
+        <version>1.0.0</version>
     </dependency>
     
     <!-- https://mvnrepository.com/artifact/org.yaml/snakeyaml -->
