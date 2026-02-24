@@ -4,14 +4,14 @@
   <groupId>ru.biosoft.diagrams</groupId>
   <artifactId>webapps</artifactId>
   <packaging>war</packaging>
-  <version>1.0.1</version>
+  <version>1.0.2</version>
   <name>Diagrams webapp</name>
   <description>WebApp of the diagrams project</description>
   
   <parent>
     <groupId>ru.biosoft</groupId>
     <artifactId>diagrams</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
   </parent>
   
   <properties>
