@@ -8,12 +8,12 @@
   <parent>
     <groupId>ru.biosoft</groupId>
     <artifactId>diagrams</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.2</version>
   </parent>
 
  <name>Converter plugins</name>
  <description>API for conversion of WDL to diagrams of nextflow script</description>
- <version>1.0.0</version>
+ <version>1.0.2</version>
  
  <properties>
    <encoding>UTF-8</encoding>
@@ -30,7 +30,7 @@
     <dependency>
     <groupId>ru.biosoft.diagrams</groupId>
     <artifactId>wdl</artifactId>
-    <version>[1.0.0,)</version>
+    <version>1.0.0</version>
     </dependency>
     
     <!-- https://mvnrepository.com/artifact/jakarta.servlet/jakarta.servlet-api -->
