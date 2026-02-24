@@ -7,19 +7,25 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import biouml.model.Compartment;
 import biouml.model.Diagram;
@@ -30,6 +36,7 @@ import ru.biosoft.access.core.DataElement;
 import ru.biosoft.access.core.DataElementPath;
 import ru.biosoft.access.core.TextDataElement;
 import ru.biosoft.util.ApplicationUtils;
+import ru.biosoft.util.TextUtil2;
 
 public class NextFlowRunner
 {
@@ -60,6 +67,7 @@ public class NextFlowRunner
         else
             pb = getNextflowLocalProcessBuilder( f.getName(), config.getName(), id, towerAddress, context, useWsl );
 
+        log.log( Level.INFO, "COMMAND: " + StreamEx.of( pb.command() ).joining( " " ) );
 		System.out.println("COMMAND: " + StreamEx.of(pb.command()).joining(" "));
 		Process process = pb.start();
 		executeProcess(process);
@@ -89,6 +97,47 @@ public class NextFlowRunner
             pb.directory( context.getOutputDir().toFile() );
         return pb;
 
+    }
+
+    private static List<String> getRunNextflowCommandsLocal(Path runDir, boolean useWsl)
+    {
+        String parent = runDir.toAbsolutePath().toString().replace( "\\", "/" );
+        String command = "nextflow ";
+
+        List<String> baseCommand;
+
+        if( useWsl )
+            baseCommand = List.of( "wsl", "--cd", parent, "bash", "-c", command );
+        else
+            baseCommand = List.of( "bash", "-c", "cd " + parent + " && " + command );
+        return baseCommand;
+    }
+
+    private static List<String> getRunNextflowCommandsDocker(Path runDir, String id)
+    {
+        String containerName = "nf-" + id;
+        String workDir = runDir.toString();//"/nf-work";
+
+        List<String> cmd = new ArrayList<>();
+        cmd.add( "docker" );
+        cmd.add( "run" );
+        cmd.add( "--rm" );
+        cmd.add( "--name" );
+        cmd.add( containerName );
+
+        cmd.add( "-w" );
+        cmd.add( runDir.toString() );
+
+        cmd.add( "-v" );
+        cmd.add( dockerVolume( Paths.get( "/var/run/docker.sock" ), "/var/run/docker.sock" ) );
+
+        cmd.add( "-v" );
+        cmd.add( dockerVolume( runDir, runDir.toString() ) );
+
+        cmd.add( "nextflow/nextflow:25.10.3" );
+        cmd.add( "nextflow" );
+
+        return cmd;
     }
 
     /*
@@ -521,4 +570,44 @@ public class NextFlowRunner
 		result.addAll(additionals);
 		return result;
 	}
+
+    public static Properties getNextflowConfig(File content, String id, boolean useDocker, boolean useWsl) throws Exception
+    {
+        File runDir = content.getParentFile();
+
+        List<String> commands;
+        if( useDocker )
+            commands = getRunNextflowCommandsDocker( runDir.toPath(), id );
+        else
+            commands = getRunNextflowCommandsLocal( runDir.toPath(), useWsl );
+
+        commands.add( "config" );
+        commands.add( "-properties" );
+
+        ProcessBuilder pb = new ProcessBuilder( commands );
+        pb.redirectErrorStream( true );
+
+        log.log( Level.INFO, "COMMAND: " + StreamEx.of( pb.command() ).joining( " " ) );
+        System.out.println( "COMMAND: " + StreamEx.of( pb.command() ).joining( " " ) );
+        Process process = pb.start();
+
+        StringBuilder processOutput = new StringBuilder();
+        int exitCode = -1;
+        try (BufferedReader processOutputReader = new BufferedReader( new InputStreamReader( process.getInputStream() ) );)
+        {
+            String readLine;
+
+            while ( (readLine = processOutputReader.readLine()) != null )
+            {
+                processOutput.append( readLine + "\n" );
+            }
+
+            exitCode = process.waitFor();
+        }
+
+        Properties properties = new Properties();
+        if( exitCode != -1 )
+            properties.load( new StringReader( processOutput.toString() ) );
+        return properties;
+    }
 }
