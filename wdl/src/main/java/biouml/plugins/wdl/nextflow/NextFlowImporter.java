@@ -131,7 +131,7 @@ public class NextFlowImporter
         importNextflow( nextflow, diagram );
         return diagram;
     }
-
+    
     public ScriptInfo parseNextflow(String name, String nextflow) throws Exception
     {
         scriptInfo = new ScriptInfo( name );
