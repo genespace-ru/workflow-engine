@@ -1,4 +1,4 @@
-package biouml.plugins.wdl;
+package biouml.plugins.wdl.nextflow;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -29,6 +29,10 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import biouml.model.Compartment;
 import biouml.model.Diagram;
+import biouml.plugins.wdl.GeneSpaceContext;
+import biouml.plugins.wdl.ImportProperties;
+import biouml.plugins.wdl.WorkflowSettings;
+import biouml.plugins.wdl.WorkflowUtil;
 import one.util.streamex.StreamEx;
 import ru.biosoft.access.DataCollectionUtils;
 import ru.biosoft.access.core.DataCollection;
@@ -36,7 +40,6 @@ import ru.biosoft.access.core.DataElement;
 import ru.biosoft.access.core.DataElementPath;
 import ru.biosoft.access.core.TextDataElement;
 import ru.biosoft.util.ApplicationUtils;
-import ru.biosoft.util.TextUtil2;
 
 public class NextFlowRunner
 {

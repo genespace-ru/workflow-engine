@@ -4,7 +4,6 @@ import com.developmentontheedge.beans.BeanInfoEx;
 
 import ru.biosoft.graphics.editor.FontEditor;
 
-
 public class WDLViewOptionsBeanInfo extends BeanInfoEx
 {
     public WDLViewOptionsBeanInfo()
@@ -18,21 +17,22 @@ public class WDLViewOptionsBeanInfo extends BeanInfoEx
         add("autoLayout");
         add("showTasks");
         add("callBrush");
-        add("taskBrush");
         add("callPen");
+        add("taskBrush");
+        add("workflowBrush");
+        add("workflowPen");
         add("expressionBrush");
+        add("expressionPen");
         add("conditionBrush");
         add("conditionalBrush");
         add("conditionPen");
-        add("expressionPen");
         add("parameterBrush");
         add("parameterPen");
         add("outputBrush");
         add("outputPen");
         add("defaultPen");
-//        add( "defaultFont", FontEditor.class );
-//        add( "nodeTitleFont", FontEditor.class );
-//        add( "progressFont", FontEditor.class );
         add( "expressionFont", FontEditor.class );
+        add("labeledTags");
+        add("clampInputs");
     }
 }

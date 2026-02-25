@@ -1,6 +1,7 @@
 package biouml.plugins.wdl.parser;
 
 import java.util.Map;
+import java.util.Map.Entry;
 
 import one.util.streamex.StreamEx;
 
@@ -107,6 +108,7 @@ public class ExpressionFormatter
     
     private void processConstructor(AstConstructor astConstructor)
     {
+        result.append(((AstConstructor)astConstructor).firstToken);
         for (Node node: astConstructor.getChildren())
         {
             result.append(node.toString());

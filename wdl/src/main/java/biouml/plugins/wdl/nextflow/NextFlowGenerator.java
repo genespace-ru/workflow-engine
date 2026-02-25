@@ -1,11 +1,13 @@
-package biouml.plugins.wdl;
+package biouml.plugins.wdl.nextflow;
 
 import biouml.model.Diagram;
+import biouml.plugins.wdl.WorkflowTextGenerator;
+import biouml.plugins.wdl.WorkflowVelocityHelper;
 
 public class NextFlowGenerator extends WorkflowTextGenerator
 {
     private static String TEMPLATE_PATH = "resources/nextflow.vm";
-    private static String TEMPLATE_NAME = "Next Flow template";
+    private static String TEMPLATE_NAME = "Nextflow template";
     private boolean isEntryWorkflow = true;
 
     public NextFlowGenerator()

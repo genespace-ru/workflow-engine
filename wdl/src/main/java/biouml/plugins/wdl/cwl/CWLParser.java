@@ -1,4 +1,4 @@
-package biouml.plugins.wdl;
+package biouml.plugins.wdl.cwl;
 
 import java.awt.Dimension;
 import java.io.File;
@@ -17,9 +17,10 @@ import com.developmentontheedge.beans.DynamicProperty;
 import biouml.model.Compartment;
 import biouml.model.Diagram;
 import biouml.model.Node;
+import biouml.plugins.wdl.WorkflowUtil;
+import biouml.plugins.wdl.diagram.DiagramGenerator;
 import biouml.plugins.wdl.diagram.WDLConstants;
 import biouml.plugins.wdl.diagram.WDLDiagramType;
-import biouml.plugins.wdl.diagram.WDLImporter;
 import biouml.standard.type.DiagramInfo;
 import biouml.standard.type.Stub;
 import one.util.streamex.StreamEx;
@@ -99,7 +100,7 @@ public class CWLParser
             Map<String, Object> input = getMap( inputs, inputName );
             String type = getString( input, "type", "" );
             String portId = generateUniqueName( task, inputName );
-            Node port = WDLImporter.addPort( portId, WDLConstants.INPUT_TYPE, inputCount, task );
+            Node port = DiagramGenerator.addPort( portId, WDLConstants.INPUT_TYPE, inputCount, task );
             WorkflowUtil.setName( port, inputName );
             WorkflowUtil.setType( port, toBioUMLType( type ) );
             WorkflowUtil.setExpression( port, "" );//TODO: default values
@@ -113,7 +114,7 @@ public class CWLParser
             Map outputBinding = getMap( output, "outputBinding" );
             String expression = getString( outputBinding, "glob", "" );
             String portId = generateUniqueName( task, outputName );
-            Node port = WDLImporter.addPort( portId, WDLConstants.OUTPUT_TYPE, outputCount, task );
+            Node port = DiagramGenerator.addPort( portId, WDLConstants.OUTPUT_TYPE, outputCount, task );
             WorkflowUtil.setName( port, outputName );
             WorkflowUtil.setType( port, toBioUMLType( type ) );
             WorkflowUtil.setExpression( port, toBioUMLExpression( expression ) );
@@ -263,7 +264,7 @@ public class CWLParser
         {
             String value = inMap.get( inKey ).toString();
             String portId = generateUniqueName( parent, inKey );
-            Node port = WDLImporter.addPort( portId, WDLConstants.INPUT_TYPE, inputCount++, call );
+            Node port = DiagramGenerator.addPort( portId, WDLConstants.INPUT_TYPE, inputCount++, call );
             Node originalPort = task.findNode( inKey );
             WorkflowUtil.setType( port, WorkflowUtil.getType( originalPort ) );
             WorkflowUtil.setPosition( port, WorkflowUtil.getPosition( originalPort ) );
@@ -277,7 +278,7 @@ public class CWLParser
             {
                 String value = out.toString();
                 String portId = generateUniqueName( diagram, value );
-                Node port = WDLImporter.addPort( portId, WDLConstants.OUTPUT_TYPE, outputCount++, call );
+                Node port = DiagramGenerator.addPort( portId, WDLConstants.OUTPUT_TYPE, outputCount++, call );
                 Node originalPort = task.findNode( value );
                 WorkflowUtil.setName( port, value );
                 WorkflowUtil.setType( port, WorkflowUtil.getType( originalPort ) );
@@ -328,12 +329,12 @@ public class CWLParser
             String sourcePortName = parts[1];
             Node sourceCall = WorkflowUtil.findCall( sourceCallName, diagram );
             Node sourcePort = (Node) ( (Compartment)sourceCall ).get( sourcePortName );
-            WDLImporter.createLink( sourcePort, node, WDLConstants.LINK_TYPE );
+            DiagramGenerator.createLink( sourcePort, node);
         }
         else
         {
             Node source = diagram.findNode( expression );
-            WDLImporter.createLink( source, node, WDLConstants.LINK_TYPE );
+            DiagramGenerator.createLink( source, node );
         }
     }
 

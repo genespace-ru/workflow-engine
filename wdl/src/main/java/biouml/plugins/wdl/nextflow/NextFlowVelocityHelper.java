@@ -1,4 +1,4 @@
-package biouml.plugins.wdl;
+package biouml.plugins.wdl.nextflow;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,7 +15,10 @@ import com.developmentontheedge.beans.DynamicProperty;
 import biouml.model.Compartment;
 import biouml.model.Diagram;
 import biouml.model.Node;
+import biouml.plugins.wdl.WorkflowUtil;
+import biouml.plugins.wdl.WorkflowVelocityHelper;
 import biouml.plugins.wdl.diagram.WDLConstants;
+import biouml.plugins.wdl.model.ExpressionInfo;
 import one.util.streamex.StreamEx;
 
 public class NextFlowVelocityHelper extends WorkflowVelocityHelper
@@ -73,6 +76,8 @@ public class NextFlowVelocityHelper extends WorkflowVelocityHelper
             case "File":
             case "Array[File]":
                 return "path";
+            case "tuple":
+                return "tuple";
             default:
                 return "val";
         }
@@ -84,8 +89,6 @@ public class NextFlowVelocityHelper extends WorkflowVelocityHelper
             return "??";
 
         StringBuilder result = new StringBuilder();
-
-        result.append( "params." );
         result.append( getName( n ) );
         String expression = getExpression( n );
         if( expression != null && !expression.isEmpty() )
@@ -912,9 +915,9 @@ public class NextFlowVelocityHelper extends WorkflowVelocityHelper
                 return true;
 
             Object before = WorkflowUtil.getBeforeCommand( compartment );
-            if( before instanceof Declaration[] )
+            if( before instanceof ExpressionInfo[] )
             {
-                for( Declaration declaration : (Declaration[])before )
+                for( ExpressionInfo declaration : (ExpressionInfo[])before )
                 {
                     if( declaration.getExpression().contains( funName ) )
                         return true;
@@ -938,7 +941,7 @@ public class NextFlowVelocityHelper extends WorkflowVelocityHelper
 
 
 
-    public String writePrivateDeclaration(Declaration declaration)
+    public String writePrivateDeclaration(ExpressionInfo declaration)
     {
         String expression = declaration.getExpression();
         expression = expression.replace( "~{", "${" );
@@ -1000,6 +1003,11 @@ public class NextFlowVelocityHelper extends WorkflowVelocityHelper
         {
             this.compartment = compartment;
         }
+    }
+    
+    public List<Compartment> getNamedWorkflows()
+    {
+        return WorkflowUtil.getWorkflows( diagram );
     }
 
 }

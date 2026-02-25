@@ -8,6 +8,7 @@ import biouml.model.Compartment;
 import biouml.model.Diagram;
 import biouml.model.Node;
 import biouml.plugins.wdl.diagram.WDLConstants;
+import biouml.plugins.wdl.model.ExpressionInfo;
 
 public class WorkflowVelocityHelper
 {
@@ -66,6 +67,11 @@ public class WorkflowVelocityHelper
     public List<Compartment> getCalls(Compartment c)
     {
         return WorkflowUtil.getCalls( c );
+    }
+    
+    public List<Compartment> getWorkflows()
+    {
+        return WorkflowUtil.getWorkflows( diagram );
     }
 
     /**
@@ -158,12 +164,22 @@ public class WorkflowVelocityHelper
     
     public List<Node> getExternalParameters()
     {
-        return WorkflowUtil.getExternalParameters( diagram );
+        return getExternalParameters( diagram );
+    }
+    
+    public List<Node> getExternalParameters(Compartment c)
+    {
+        return WorkflowUtil.getExternalParameters( c );
+    }
+    
+    public List<Node> getExternalOutputs(Compartment c)
+    {
+        return WorkflowUtil.getExternalOutputs( c );
     }
 
     public List<Node> getExternalOutputs()
     {
-        return WorkflowUtil.getExternalOutputs( diagram );
+        return getExternalOutputs( diagram );
     }
     
     public String getTaskRef(Compartment c)
@@ -271,7 +287,7 @@ public class WorkflowVelocityHelper
         return WorkflowUtil.getImports( diagram );
     }  
 
-    public Declaration[] getStructMembers(Node node)
+    public ExpressionInfo[] getStructMembers(Node node)
     {
         return WorkflowUtil.getStructMembers( node );
     }

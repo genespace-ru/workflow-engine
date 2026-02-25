@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import biouml.plugins.wdl.GeneSpaceContext;
-import biouml.plugins.wdl.NextFlowRunner;
+import biouml.plugins.wdl.nextflow.NextFlowRunner;
 import ru.biosoft.util.ApplicationUtils;
 
 public class TestNextflowRunner
