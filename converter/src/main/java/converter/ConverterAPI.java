@@ -27,7 +27,7 @@ import ru.biosoft.server.servlets.webservices.WebServicesServlet;
 import ru.biosoft.util.TempFiles;
 import ru.biosoft.util.TextUtil2;
 
-import biouml.plugins.wdl.NextFlowGenerator;
+import biouml.plugins.wdl.nextflow.NextFlowGenerator;
 import biouml.model.Diagram;
 import ru.biosoft.util.ApplicationUtils;
 

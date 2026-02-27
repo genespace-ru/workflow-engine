@@ -15,7 +15,7 @@ import javax.imageio.stream.ImageOutputStream;
 
 import biouml.model.Diagram;
 import biouml.model.util.DiagramImageGenerator;
-import biouml.plugins.wdl.NextFlowGenerator;
+import biouml.plugins.wdl.nextflow.NextFlowGenerator;
 import biouml.plugins.wdl.diagram.WDLImporter;
 import biouml.plugins.wdl.diagram.WDLLayouter;
 import biouml.plugins.wdl.parser.AstStart;

@@ -4,7 +4,7 @@
 
  <groupId>ru.biosoft.diagrams</groupId>
  <artifactId>wdl</artifactId>
- <version>1.0.2</version>
+ <version>1.0.3</version>
  <packaging>jar</packaging>
 
  <name>WDL</name>
@@ -19,7 +19,7 @@
   <parent>
   <groupId>ru.biosoft</groupId>
   <artifactId>diagrams</artifactId>
-  <version>1.0.2</version>
+  <version>1.0.3</version>
  </parent>
 
  <dependencies>
@@ -39,7 +39,7 @@
    <dependency>
     <groupId>ru.biosoft.diagrams</groupId>
     <artifactId>diagram</artifactId>
-    <version>1.0.2</version>
+    <version>[1.0.3,)</version>
    </dependency>
 
   <dependency>

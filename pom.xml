@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>ru.biosoft</groupId>
     <artifactId>diagrams</artifactId>
-    <version>1.0.2</version>
+    <version>1.0.3</version>
     <url>https://github.com/genespace-ru/workflow-engine</url>
     <name>Workflow engine</name>
     <description>Workflow engine supporting WDL diagrams</description>
