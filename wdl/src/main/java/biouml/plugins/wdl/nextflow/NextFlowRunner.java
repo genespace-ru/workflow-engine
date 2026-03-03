@@ -578,11 +578,12 @@ public class NextFlowRunner
     {
         File runDir = content.getParentFile();
 
-        List<String> commands;
+        List<String> commands = new ArrayList<>();
+        String containerId = id.replaceAll( "[^a-zA-Z]+", "" );
         if( useDocker )
-            commands = getRunNextflowCommandsDocker( runDir.toPath(), id );
+            commands.addAll( getRunNextflowCommandsDocker( runDir.toPath(), containerId ) );
         else
-            commands = getRunNextflowCommandsLocal( runDir.toPath(), useWsl );
+            commands.addAll( getRunNextflowCommandsLocal( runDir.toPath(), useWsl ) );
 
         commands.add( "config" );
         commands.add( "-properties" );
