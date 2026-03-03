@@ -109,12 +109,17 @@ public class WDLImporter implements DataElementImporter
         }
     }
     
-    public Diagram generateDiagram(File file, String name, DataCollection parent) throws Exception
+    public ScriptInfo generateScriptInfo(File file, String name) throws Exception
     {
         String text = ApplicationUtils.readAsString(file);
         text = text.replace("<<<", "{").replace(">>>", "}");//TODO: fix parsing <<< >>>
         AstStart start = new WDLParser().parse(new StringReader(text));
-        ScriptInfo scriptInfo = createScriptInfo(start, name);
+        return createScriptInfo(start, name);
+    }
+    
+    public Diagram generateDiagram(File file, String name, DataCollection parent) throws Exception
+    {
+        ScriptInfo scriptInfo = generateScriptInfo(file, name);
         Diagram diagram = new WDLDiagramType().createDiagram( parent, name, null );
         return new DiagramGenerator().generateDiagram( scriptInfo, diagram );
     }
