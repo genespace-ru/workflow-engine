@@ -85,7 +85,7 @@ public class WDLImporter implements DataElementImporter
                 throw new Exception("Please specify diagram name.");
 
             String text = ApplicationUtils.readAsString(file);
-            text = text.replace("<<<", "{").replace(">>>", "}");//TODO: fix parsing <<< >>>
+            text = processContent( text );//TODO: fix parsing <<< >>>
 
             AstStart start = new WDLParser().parse(new StringReader(text));
             ScriptInfo scriptInfo = createScriptInfo(start, diagramName);
@@ -112,11 +112,16 @@ public class WDLImporter implements DataElementImporter
     public ScriptInfo generateScriptInfo(File file, String name) throws Exception
     {
         String text = ApplicationUtils.readAsString(file);
-        text = text.replace("<<<", "{").replace(">>>", "}");//TODO: fix parsing <<< >>>
-        AstStart start = new WDLParser().parse(new StringReader(text));
-        return createScriptInfo(start, name);
+        return generateScriptInfo( text, name );
     }
     
+    public ScriptInfo generateScriptInfo(String fileContent, String name) throws Exception
+    {
+        fileContent = processContent( fileContent );//TODO: fix parsing <<< >>>
+        AstStart start = new WDLParser().parse( new StringReader( fileContent ) );
+        return createScriptInfo( start, name );
+    }
+
     public Diagram generateDiagram(File file, String name, DataCollection parent) throws Exception
     {
         ScriptInfo scriptInfo = generateScriptInfo(file, name);
@@ -428,5 +433,12 @@ public class WDLImporter implements DataElementImporter
         for( AstDeclaration declaration : struct.getDeclarations() )
             structInfo.addExpressions(createExpressionInfo(declaration));
         return structInfo;
+    }
+
+    public static String processContent(String wdlFileContent)
+    {
+        if( wdlFileContent == null )
+            return null;
+        return wdlFileContent.replace( "<<<", "{" ).replace( ">>>", "}" );
     }
 }
