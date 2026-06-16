@@ -879,8 +879,9 @@ public class NextFlowVelocityHelper extends WorkflowVelocityHelper
     {
         return new String[] {"toChannel", "get", "getDefault", "combineAll"};
     }
+    
     /**
-     * Functions that should be imported from biouml_function.nf
+     * Functions that should be imported from genespace_function.nf
      */
     public String getWDLFunctions()
     {

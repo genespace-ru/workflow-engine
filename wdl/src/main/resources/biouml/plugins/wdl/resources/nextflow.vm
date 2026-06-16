@@ -43,7 +43,7 @@ nextflow.enable.dsl=2
 #######################################################################################
 #set($functions = $helper.getFunctions())
 #if (!$functions.isEmpty())
-include { $functions } from './biouml_function.nf'
+include { $functions } from './genespace_function.nf'
 #end
 #######################################################################################
 #foreach ($c in $helper.getImportedCalls())include { $helper.getTaskRef($c) as $helper.getImportedAlias($c) } from './$helper.getImportedDiagram($c)'$BR#end
