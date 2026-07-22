@@ -58,7 +58,8 @@ import ru.biosoft.util.bean.BeanInfoEx2;
 public class WDLImporter implements DataElementImporter
 {
     private WDLImportProperties properties = null;
-    protected static final Logger log = Logger.getLogger( WDLImporter.class.getName() );
+    protected static final Logger log = Logger.getLogger(WDLImporter.class.getName());
+    
     private ScriptLoader scriptLoader;
 
     public void setScriptLoader(ScriptLoader loader)
@@ -466,5 +467,12 @@ public class WDLImporter implements DataElementImporter
         for( AstDeclaration declaration : struct.getDeclarations() )
             structInfo.addExpressions( createExpressionInfo( declaration ) );
         return structInfo;
+    }
+
+    public static String processContent(String wdlFileContent)
+    {
+        if( wdlFileContent == null )
+            return null;
+        return wdlFileContent.replace( "<<<", "{" ).replace( ">>>", "}" );
     }
 }

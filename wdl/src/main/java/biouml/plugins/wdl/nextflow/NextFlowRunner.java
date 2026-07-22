@@ -40,13 +40,13 @@ import ru.biosoft.util.ApplicationUtils;
 
 public class NextFlowRunner
 {
-	private static final String BIOUML_FUNCTIONS_NF = "resources/biouml_function.nf";
+    private static final String BIOUML_FUNCTIONS_NF = "resources/genespace_function.nf";
 	private static final Logger log = Logger.getLogger(NextFlowRunner.class.getName());
 
 	public static File generateFunctions(String outputDir) throws IOException
 	{
 		InputStream inputStream = NextFlowRunner.class.getResourceAsStream(BIOUML_FUNCTIONS_NF);
-		File result = new File(outputDir, "biouml_function.nf");
+        File result = new File( outputDir, "genespace_function.nf" );
 		Files.copy(inputStream, result.toPath(), StandardCopyOption.REPLACE_EXISTING);
 		return result;
 	}
@@ -575,11 +575,12 @@ public class NextFlowRunner
     {
         File runDir = content.getParentFile();
 
-        List<String> commands;
+        List<String> commands = new ArrayList<>();
+        String containerId = id.replaceAll( "[^a-zA-Z]+", "" );
         if( useDocker )
-            commands = getRunNextflowCommandsDocker( runDir.toPath(), id );
+            commands.addAll( getRunNextflowCommandsDocker( runDir.toPath(), containerId ) );
         else
-            commands = getRunNextflowCommandsLocal( runDir.toPath(), useWsl );
+            commands.addAll( getRunNextflowCommandsLocal( runDir.toPath(), useWsl ) );
 
         commands.add( "config" );
         commands.add( "-properties" );

@@ -996,8 +996,9 @@ public class NextFlowVelocityHelper extends WorkflowVelocityHelper
         return new String[] {"toChannel", "get", "getDefault", "combineAll", "saveOutput", "fileOrNull", "orNull", "pair", "range",
                 "stringify_wdl", "toArray"};
     }
+    
     /**
-     * Functions that should be imported from biouml_function.nf
+     * Functions that should be imported from genespace_function.nf
      */
     public static String[] getWDLFunctions()
     {
