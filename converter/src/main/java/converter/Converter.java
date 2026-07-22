@@ -79,13 +79,9 @@ public class Converter
 
         String name = f.getName();
         name = f.getName().endsWith(".wdl") ? name.substring(0, name.length() - 4) : name;
-
         WDLImporter importer = new WDLImporter();
-
         String text = ApplicationUtils.readAsString(f);
-
-        AstStart start = new WDLParser().parse(new StringReader(text));
-        Diagram diagram = importer.generateDiagram(start, null, "diagram");
+        Diagram diagram = importer.generateDiagram("diagram", text , null);
         new WDLLayouter().layout( diagram );
         return diagram;
     }

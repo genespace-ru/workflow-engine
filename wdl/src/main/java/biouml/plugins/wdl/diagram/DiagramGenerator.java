@@ -30,6 +30,7 @@ import biouml.plugins.wdl.model.StructInfo;
 import biouml.plugins.wdl.model.TaskInfo;
 import biouml.plugins.wdl.model.WorkflowInfo;
 import biouml.plugins.wdl.parser.ExpressionParser;
+import biouml.standard.type.DimensionEx;
 import biouml.standard.type.Stub;
 import one.util.streamex.StreamEx;
 import ru.biosoft.access.core.DataCollection;
@@ -720,12 +721,12 @@ public class DiagramGenerator
         WorkflowUtil.setPosition( inNode, position );
         inNode.setFixed( true );
         Point parentLoc = parent.getLocation();
-        Dimension parentDim = parent.getShapeSize();
+        DimensionEx parentDim = parent.getShapeSize();
         if( WDLConstants.INPUT_TYPE.equals( nodeType ) )
             inNode.setLocation( parentLoc.x + 2, parentLoc.y + position * 24 + 10 );
         else
         {
-            inNode.setLocation( parentLoc.x + parentDim.width - 16 - 2, parentLoc.y + position * 24 + 10 );
+            inNode.setLocation( parentLoc.x + parentDim.getWidth() - 16 - 2, parentLoc.y + position * 24 + 10 );
         }
         parent.put( inNode );
         return inNode;

@@ -42,6 +42,7 @@ import biouml.plugins.wdl.nextflow.ast.NextFlowFormatter;
 import biouml.plugins.wdl.nextflow.ast.NextflowParser;
 import biouml.plugins.wdl.nextflow.ast.ParamsCollector;
 import one.util.streamex.StreamEx;
+import ru.biosoft.util.ApplicationUtils;
 
 import java.awt.image.BufferedImage;
 import java.io.File;

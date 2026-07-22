@@ -132,7 +132,7 @@ public class WDLImporter implements DataElementImporter
     
     public ScriptInfo readScript(String name, String text) throws Exception
     {
-        text = text.replace( "<<<", "{" ).replace( ">>>", "}" );//TODO: fix parsing <<< >>>
+        text = processContent(text);
         AstStart start = new WDLParser().parse( new StringReader( text ) );
         return createScriptInfo( start, name );
     }
