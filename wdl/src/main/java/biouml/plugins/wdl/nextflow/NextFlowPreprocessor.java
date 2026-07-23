@@ -88,8 +88,11 @@ public class NextFlowPreprocessor
 
         for( Compartment task : WorkflowUtil.getTasks( result ) )
         {
-            WorkflowUtil.setRuntimeProperty( task, "publishDir",
-                    "\"" + publishDir + "/" + task.getName() + "\", mode: 'copy', overwrite: true" );
+            if( publishDir.isEmpty() )
+                WorkflowUtil.setRuntimeProperty( task, "publishDir", "\"" + task.getName() + "\", mode: 'copy', overwrite: true" );
+            else
+                WorkflowUtil.setRuntimeProperty( task, "publishDir",
+                        "\"" + publishDir + "/" + task.getName() + "\", mode: 'copy', overwrite: true" );
 
             for( Node input : WorkflowUtil.getInputs( task ) )
             {
@@ -1187,7 +1190,10 @@ public class NextFlowPreprocessor
         {
             if( node instanceof AstFunction )
             {
-//                String name = ( (AstFunction)node ).toString();
+                
+                String name = ( (AstFunction)node ).toString();
+                if (name.equals("glob")) //exclusion
+                    continue;
 //                if( needsWrapper.contains( name ) )
 //                {
                     return (AstFunction)node;
