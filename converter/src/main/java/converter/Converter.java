@@ -2,7 +2,6 @@ package converter;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.StringReader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
@@ -16,10 +15,10 @@ import javax.imageio.stream.ImageOutputStream;
 import biouml.model.Diagram;
 import biouml.model.util.DiagramImageGenerator;
 import biouml.plugins.wdl.nextflow.NextFlowGenerator;
+import biouml.plugins.wdl.FileScriptLoader;
+import biouml.plugins.wdl.ScriptLoader;
 import biouml.plugins.wdl.diagram.WDLImporter;
 import biouml.plugins.wdl.diagram.WDLLayouter;
-import biouml.plugins.wdl.parser.AstStart;
-import biouml.plugins.wdl.parser.WDLParser;
 import ru.biosoft.util.ApplicationUtils;
 
 public class Converter
@@ -27,7 +26,8 @@ public class Converter
 
     public static void main(String ... args)
     {
-        try
+//    	args = new String[] {"C:/Users/Damag/nextflowtest/ngs-pipelines-main/ngs-pipelines-main/pipelines/brca/wdl/workflows/brca_.wdl", "-i"};
+    	try
         {
             ConverterParameters parameters = new ConverterParameters(args);
 
@@ -53,6 +53,7 @@ public class Converter
             String name = new File(absolutePath).getName();
             Diagram diagram = loadDiagram(absolutePath);
 
+            System.out.println("Should generate image: "+parameters.showImage);
             if( parameters.showImage )
             {
                 File imageFile = new File(parent + "/" + name + ".png");
@@ -80,8 +81,9 @@ public class Converter
         String name = f.getName();
         name = f.getName().endsWith(".wdl") ? name.substring(0, name.length() - 4) : name;
         WDLImporter importer = new WDLImporter();
+        importer.setScriptLoader(new FileScriptLoader(ScriptLoader.WDL_TYPE, f.getParentFile()));
         String text = ApplicationUtils.readAsString(f);
-        Diagram diagram = importer.generateDiagram("diagram", text , null);
+        Diagram diagram = importer.generateDiagram(text , name, null);
         new WDLLayouter().layout( diagram );
         return diagram;
     }

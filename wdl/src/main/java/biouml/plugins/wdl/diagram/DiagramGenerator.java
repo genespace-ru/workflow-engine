@@ -646,7 +646,10 @@ public class DiagramGenerator
         {
             for( Node node : WorkflowUtil.getExternalOutputs( (Diagram)taskСompartment ) )
             {
-                Node portNode = addPort( node.getName(), WDLConstants.OUTPUT_TYPE, WorkflowUtil.getPosition( node ), c );
+                int position = WorkflowUtil.getPosition( node );
+                if (position == -1)
+                    position = outputs;
+                Node portNode = addPort( node.getName(), WDLConstants.OUTPUT_TYPE, position, c );
                 WorkflowUtil.copyExpresion( portNode, node );
                 WorkflowUtil.setPosition( portNode, WorkflowUtil.getPosition( node ) );
                 outputs++;
@@ -704,7 +707,8 @@ public class DiagramGenerator
 
         int maxPorts = Math.max( inputs, outputs );
         int height = Math.max( 50, 24 * maxPorts + 16 );
-        c.setShapeSize( new Dimension( 200, height ) );
+        int width = new WDLViewBuilder().calculateCallWidth( taskСompartment , diagram.getViewOptions());
+        c.setShapeSize( new Dimension( width, height ) );
         c.getAttributes().add( new DynamicProperty( "innerNodesPortFinder", Boolean.class, true ) );
         String resultName = call.getResultName();
         if( resultName != null )

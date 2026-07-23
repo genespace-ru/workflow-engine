@@ -39,6 +39,7 @@ import ru.biosoft.graphics.SimplePath;
 import ru.biosoft.graphics.TextView;
 import ru.biosoft.graphics.View;
 import ru.biosoft.graphics.font.ColorFont;
+import ru.biosoft.util.ApplicationUtils;
 
 public class WDLViewBuilder extends DefaultDiagramViewBuilder
 {
@@ -506,6 +507,27 @@ public class WDLViewBuilder extends DefaultDiagramViewBuilder
                 || WorkflowUtil.isExternalOutput( node ) || WorkflowUtil.isConditionalPort( node ) )
             return new InOutFinder( false, getNodeBounds( node ) );
         return super.getPortFinder( node );
+    }
+    
+    public int calculateCallWidth(Compartment compartment, DiagramViewOptions options)
+    {
+        View text = new ComplexTextView( StringEscapeUtils.escapeHtml4( compartment.getTitle() ), options.getCompartmentTitleFont(),
+                options.getFontRegistry(), ComplexTextView.TEXT_ALIGN_CENTER, 30, ApplicationUtils.getGraphics());
+        int maxInputWidth = 0;
+        int maxOutputWidth = 0;
+        int textLength = text.getBounds().width;
+        
+        for ( Node node: WorkflowUtil.getInputs( compartment ))
+        {
+            maxInputWidth = Math.max(maxInputWidth, getNodeBounds( node ).width);
+        }
+        
+        for ( Node node: WorkflowUtil.getOutputs( compartment ))
+        {
+            maxOutputWidth = Math.max(maxOutputWidth, getNodeBounds( node ).width);
+        }
+        
+        return textLength + maxInputWidth + maxOutputWidth + 20;
     }
 
 }
