@@ -100,7 +100,7 @@ public class WDLWebProvider extends WebJSONProviderSupport
             JSONUtils.correctBeanOptions( settings, jsonSettings );
             try
             {
-                NextFlowRunner.runNextFlow( diagram, null, settings, outputDir, false );
+                NextFlowRunner.runNextFlowByDiagram( diagram, null, settings, outputDir, false, null );
                 response.sendString( settings.getOutputPath().toString() );
             }
             catch (Exception e)
