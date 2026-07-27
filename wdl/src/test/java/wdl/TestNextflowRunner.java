@@ -37,7 +37,7 @@ public class TestNextflowRunner
 
         Path outputDir = Paths.get( OUTPUT_DIR );
         GeneSpaceContext context = new GeneSpaceContext( outputDir, outputDir, outputDir, outputDir );
-        NextFlowRunner.runNextFlow( "1", "test", params, nextFlowScript, isWindows, false, towerAddress, context );
+        NextFlowRunner.runNextFlow( "1", "test", params, nextFlowScript, isWindows, false, towerAddress, context, null );
     }
 
     private static void runAnna(boolean useDocker) throws Exception
@@ -66,7 +66,7 @@ public class TestNextflowRunner
         Path outputDir = Paths.get( OUTPUT_DIR );
         GeneSpaceContext context = new GeneSpaceContext( new File( PROJECT_DIR_ARGUMENT ).getParentFile().toPath(), new File( NEXTFLOW_PATH ).getParentFile().toPath(), null,
                 outputDir );
-        NextFlowRunner.runNextFlow( "158", "test", params, nextFlowScript, isWindows, useDocker, towerAddress, context );
+        NextFlowRunner.runNextFlow( "158", "test", params, nextFlowScript, isWindows, useDocker, towerAddress, context, null );
     }
 
 }
