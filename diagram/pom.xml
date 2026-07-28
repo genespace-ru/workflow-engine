@@ -4,7 +4,7 @@
 
  <groupId>ru.biosoft.diagrams</groupId>
  <artifactId>diagram</artifactId>
- <version>1.0.4-SNAPSHOT</version>
+ <version>1.0.5-SNAPSHOT</version>
  <packaging>jar</packaging>
 
  <name>Diagram plugins</name>
@@ -19,7 +19,7 @@
   <parent>
   <groupId>ru.biosoft</groupId>
   <artifactId>diagrams</artifactId>
-  <version>1.0.4-SNAPSHOT</version>
+  <version>1.0.5-SNAPSHOT</version>
  </parent>
 
  <dependencies>
@@ -69,13 +69,13 @@
   <dependency>
         <groupId>ru.biosoft.genomebrowser</groupId>
         <artifactId>misc</artifactId>
-        <version>[2.0.1,)</version>
+        <version>[2.0.7,)</version>
     </dependency>
     
   <dependency>
     <groupId>ru.biosoft.genomebrowser</groupId>
     <artifactId>server</artifactId>
-    <version>[2.0.1,)</version>
+    <version>[2.0.7,)</version>
    </dependency>
   
   <!-- https://mvnrepository.com/artifact/one.util/streamex -->
