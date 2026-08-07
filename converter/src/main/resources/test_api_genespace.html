@@ -33,6 +33,14 @@
                 <label for="input_wdl_text" class="form-label">WDL text</label>
                 <textarea class="form-control" id="input_wdl_text" name="inputWdlText" rows="25"></textarea>
                 </div>
+                <div class="form-group" id="div_selector" style="display:none;">
+                    <label for="input_wdl_selector" class="form-label">Available files</label>
+                    <select class="form-select" id="input_wdl_selector" name="location">
+                        <option value="">-- select a file --</option>
+                    </select>
+                    <label for="input_wdl_selector" class="form-label">You have uploaded an archive. Please, select main WDL for converting.</label>
+                    <input type="hidden" id="hidden_id" name="folderId" value="">
+                </div>
             </div>
                         
              <button type="submit" id="submit_convert" class="btn btn-primary">Submit</button>
@@ -116,15 +124,25 @@
                       var test = $(this).val();
                       $(".input_wdl_type_selector").hide();
                       $("#div_"+test).show();
+                      $("#div_selector").hide();
                       $("#newxflow_result").text("");
                       $("#diagram_image").attr("src", "");
                       $("#result_content").hide();
                       $("#input_wdl_file").val("");
                       $("#submit_convert").removeAttr("disabled");
                   });
-                  
+
+              // Handle selector change
+              $("#input_wdl_selector").on('change', function() {
+                  if ($(this).val()) {
+                      $("#submit_convert").removeAttr("disabled");
+                  } else {
+                      $("#submit_convert").attr("disabled", "disabled");
+                  }
+              });
+
               $("#input_wdl_file").bind('change', function() {
-                if(this.files[0].size > 1024*1024)
+                if(this.files[0].size > 1024*1024*1024)
                 {
                     $("#modal_file_size").modal("show");
                     $("#submit_convert").attr("disabled","disabled");
@@ -157,9 +175,13 @@
                 $("#result_content").hide();
                 //return;
                 let formData = new FormData(event.target);
-                let formData2 = new FormData(event.target);
                 let wdl = $("input[name='wdlType']:checked").val();
-                if(wdl == 'file')
+                if($("#input_wdl_selector").is(':visible'))
+                {
+                    formData.delete("inputWdl");
+                    formData.delete("inputWdlText");
+                }
+                else if(wdl == 'file')
                 {
                     if($("#input_wdl_file").get(0).files.length == 0)
                     {
@@ -167,9 +189,10 @@
                         return;
                     }
                     formData.delete("inputWdlText");
-                    formData2.delete("inputWdlText");
+                    formData.delete("location");
+                    formData.delete("folderId");
                 }
-                else
+                else if(wdl == 'text')
                 {
                     if($("#input_wdl_text").val().trim().length == 0)
                     {
@@ -177,11 +200,10 @@
                         return;
                     }
                     formData.delete("inputWdl");
-                    formData2.delete("inputWdl");
+                    formData.delete("location");
+                    formData.delete("folderId");
                 }
                 const image = document.querySelector("#diagram_image");
-                formData.append("convertType", "diagram");
-                formData.append("outputType", "image");
                 fetch(event.target.action, {
                     method: 'POST',
                     body:  formData
@@ -189,15 +211,51 @@
                     if (!response.ok) {
                       throw new Error(`HTTP error! Status: ${response.status}`);
                     }
-                    if (response.headers.get("content-type") == "application/json") {
-                        throw response;
+                    if (response.headers.get("content-type").includes("application/json")) {
+                        return response.json();
                     }
                     else
                         return response.blob();// or response.text() or whatever the server sends
-                }).then((blob) => {
-                    const objectURL = URL.createObjectURL(blob);
-                    image.src = objectURL;
-                    $("#result_content").show();
+                }).then((result) => {
+                    if (result && typeof result === 'object' && result.values.diagram) {
+                        // JSON response
+                        image.src = "data:image/png;base64," + result.values.diagram;
+                        $("#newxflow_result").text(result.values.nextflow);
+                        $("#result_content").show();
+                    }else if(result && typeof result === 'object' && result.values.folderId && result.values.files)
+                    {
+                        // Store the folderId
+                        $("#hidden_id").val(result.values.folderId);
+
+                        // Populate the selector with filenames
+                        var $selector = $("#input_wdl_selector");
+                        $selector.empty();
+                        $selector.append('<option value="">-- select a file --</option>');
+                        result.values.files.forEach(function(filename) {
+                            $selector.append('<option value="' + filename + '">' + filename + '</option>');
+                        });
+
+                        // Automatically select first option
+                        if (result.values.files.length > 0) {
+                            $selector.prop('selectedIndex', 1);
+                        }
+
+                        // Hide file/text inputs and show selector
+                        $(".input_wdl_type_selector").hide();
+                        $("#div_selector").show();
+                        $("#submit_convert").removeAttr("disabled");
+                        $("input[name='wdlType']").prop('checked', false);
+
+                        // Hide result content since we need to retry
+                        $("#result_content").hide();
+                        $("#newxflow_result").text("");
+                        $("#diagram_image").attr("src", "");
+                    } else {
+                        // Legacy blob response
+                        const objectURL = URL.createObjectURL(result);
+                        image.src = objectURL;
+                        $("#result_content").show();
+                    }
                   }).catch((error) => {
                     if (error instanceof Error) {
                         return { error }
@@ -214,39 +272,7 @@
                     } 
 
                 });
-                formData2.append("convertType", "nextflow");
-                fetch(event.target.action, {
-                    method: 'POST',
-                    body:  formData2
-                }).then((response) => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! Status: ${response.status}`);
-                    }
-                    if (response.headers.get("content-type") == "application/json") {
-                        throw response;
-                    }
-                    else
-                        return response.text();
-                }).then((body) => {
-                    $("#newxflow_result").text(body);
-                    $("#result_content").show();
-                }).catch((error) => {
-                    console.log("Error occurred");
-                    if (error instanceof Error) {
-                        return { error }
-                      }
-                    try {
-                        error.json().then(body => {
-                            showResponseError(body.message);
-                            console.log("message = "+body.message);
-                        });
-                    } catch (e) {
-                        console.log("Error parsing promise");
-                        console.log(error);
-                    }
-                });
             });
-                  
           });
           
         function showResponseError(message)

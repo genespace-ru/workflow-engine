@@ -8,12 +8,12 @@
   <parent>
     <groupId>ru.biosoft</groupId>
     <artifactId>diagrams</artifactId>
-    <version>1.0.4-SNAPSHOT</version>
+    <version>1.0.5-SNAPSHOT</version>
   </parent>
 
  <name>Converter plugins</name>
  <description>API for conversion of WDL to diagrams of nextflow script</description>
- <version>1.0.4-SNAPSHOT</version>
+ <version>1.0.5-SNAPSHOT</version>
  
  <properties>
    <encoding>UTF-8</encoding>
@@ -30,7 +30,7 @@
     <dependency>
     <groupId>ru.biosoft.diagrams</groupId>
     <artifactId>wdl</artifactId>
-    <version>1.0.4-SNAPSHOT</version>
+    <version>1.0.5-SNAPSHOT</version>
     </dependency>
     
     <!-- https://mvnrepository.com/artifact/jakarta.servlet/jakarta.servlet-api -->
@@ -45,6 +45,12 @@
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-fileupload2-jakarta-servlet6</artifactId>
         <version>2.0.0-M2</version>
+    </dependency>
+    
+    <dependency>
+        <groupId>ru.biosoft.genomebrowser</groupId>
+        <artifactId>misc</artifactId>
+        <version>2.0.8</version>
     </dependency>
     
   </dependencies>
