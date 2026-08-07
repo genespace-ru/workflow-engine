@@ -127,6 +127,18 @@ public class Converter
         generator.generateDiagram(scriptInfo, null, name);
         return generator.getAllImports();
     }
+    
+    protected static Diagram loadDiagram(String path) throws Exception
+    {
+        File f = new File(path);
+        String name = f.getName();
+        name = f.getName().endsWith(".wdl") ? name.substring(0, name.length() - 4) : name;
+        WDLImporter importer = new WDLImporter();
+        importer.setScriptLoader(new FileScriptLoader(ScriptLoader.WDL_TYPE, f.getParentFile()));
+        String text = ApplicationUtils.readAsString(f);
+        Diagram diagram = importer.generateDiagram(text , name, null);
+        return diagram;
+    }
 
     public static void exportImage(@Nonnull Diagram diagram, @Nonnull File file) throws Exception
     {
