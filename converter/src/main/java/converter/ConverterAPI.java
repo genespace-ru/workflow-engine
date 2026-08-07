@@ -1,39 +1,45 @@
 package converter;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 import org.apache.commons.fileupload2.core.DiskFileItemFactory;
 import org.apache.commons.fileupload2.core.FileItem;
 import org.apache.commons.fileupload2.jakarta.servlet6.JakartaServletFileUpload;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
-import biouml.model.util.DiagramXmlWriter;
-import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.http.Cookie;
+import biouml.model.Diagram;
+import biouml.plugins.wdl.nextflow.NextFlowGenerator;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import ru.biosoft.access.core.Environment;
 import ru.biosoft.server.servlets.webservices.BiosoftWebResponse;
 import ru.biosoft.server.servlets.webservices.JSONResponse;
-import ru.biosoft.server.servlets.webservices.WebServicesServlet;
+import ru.biosoft.util.ApplicationUtils;
 import ru.biosoft.util.TempFiles;
 import ru.biosoft.util.TextUtil2;
-
-import biouml.plugins.wdl.nextflow.NextFlowGenerator;
-import biouml.model.Diagram;
-import ru.biosoft.util.ApplicationUtils;
+import ru.biosoft.util.archive.ArchiveFactory;
 
 public class ConverterAPI
 {
-    
+    private static Map<Long, File> idToFolder = new ConcurrentHashMap<>();
+    private static AtomicLong id = new AtomicLong();
     public static final String UPLOAD_DIRECTORY = System.getProperty( "biouml.upload_dir", System.getProperty("java.io.tmpdir"));
     
     public void convert()
@@ -60,163 +66,223 @@ public class ConverterAPI
         
         File fileToConvert = null;
         
-        final ServletOutputStream out = response.getOutputStream();//new ByteArrayOutputStream();
-        try
+        for ( String uriParameter : uriParameters.keySet() )
         {
-            if( JakartaServletFileUpload.isMultipartContent(request) )
+            arguments.put( TextUtil2.decodeURL( uriParameter ), uriParameters.get( uriParameter ) );
+        }
+
+        if( JakartaServletFileUpload.isMultipartContent( request ) )
+        {
+            DiskFileItemFactory factory = DiskFileItemFactory.builder().get();
+            JakartaServletFileUpload upload = new JakartaServletFileUpload( factory );
+            File uploadDir = getUploadFolder();
+            try
             {
-
-                DiskFileItemFactory factory = DiskFileItemFactory.builder().get();
-                JakartaServletFileUpload upload = new JakartaServletFileUpload(factory);
-                File uploadDir = getUploadFolder();
-
-                try {
-                    List<FileItem> formItems = upload.parseRequest(request);
-                    if (formItems != null && formItems.size() > 0) {
-                        for (FileItem item : formItems) {
-                            if (!item.isFormField() && !item.getName().isEmpty()) {
-                                String fileName = new File(item.getName()).getName();
-                                File destinationFile = new File(uploadDir, fileName);
-                                item.write(destinationFile.toPath());
-                                fileToConvert =  destinationFile;
-                            }
-                            else
-                            {
-                                String name = item.getFieldName();
-                                String value = item.getString();
-                                arguments.put(name, value);
-                            }
+                List<FileItem> formItems = upload.parseRequest( request );
+                if( formItems != null && formItems.size() > 0 )
+                {
+                    for ( FileItem item : formItems )
+                    {
+                        if( !item.isFormField() && !item.getName().isEmpty() )
+                        {
+                            String fileName = new File( item.getName() ).getName();
+                            File destinationFile = new File( uploadDir, fileName );
+                            item.write( destinationFile.toPath() );
+                            fileToConvert = destinationFile;
+                        }
+                        else
+                        {
+                            String name = item.getFieldName();
+                            String value = item.getString();
+                            arguments.put( name, value );
                         }
                     }
-                } catch (Exception ex) {
-                    sendError(response, "Error parsing input arguments: " + ex.getMessage());
+                }
+            }
+            catch (Exception ex)
+            {
+                sendError( response, "Error parsing input arguments: " + ex.getMessage() );
+                return;
+            }
+
+            // Check for folderId after parsing multipart content
+            if( arguments.get( "folderId" ) != null )
+            {
+                String folderId = (String) arguments.get( "folderId" );
+                File parentFolder = idToFolder.get( Long.parseLong( folderId ) );
+                if( parentFolder == null )
+                {
+                    sendError( response, "Incorrect upload id, please, upload archived file again" );
                     return;
                 }
-                
-                for ( String uriParameter : uriParameters.keySet() )
+                String location = (String) arguments.get( "location" );
+                fileToConvert = new File( parentFolder, location );
+            }
+            else if( fileToConvert == null && arguments.get( "inputWdlText" ) != null )
+            {
+                File dir = TempFiles.getTempDirectory();
+
+                fileToConvert = new File( dir, "input.wdl" );
+                ApplicationUtils.writeString( fileToConvert, arguments.getOrDefault( "inputWdlText", "" ).toString() );
+            }
+            File archivedFolder = TempFiles.dir( fileToConvert.getName() + "_unpacked" );
+            try
+            {
+                ArchiveFactory.unpack( fileToConvert, archivedFolder );
+                Path dir = archivedFolder.toPath();
+                List<String> files = collectWdlFiles( dir, dir );
+                BiosoftWebResponse resp = new BiosoftWebResponse( response, response.getOutputStream() );
+                JSONResponse jsonResp = new JSONResponse( resp );
+                if( !files.isEmpty() )
                 {
-                    arguments.put(TextUtil2.decodeURL(uriParameter), uriParameters.get(uriParameter));
+                    JSONObject res = new JSONObject();
+                    Long idl = id.incrementAndGet();
+                    res.put( "folderId", idl.toString() );
+                    idToFolder.put( idl, archivedFolder );
+                    JSONArray array = new JSONArray( files );
+                    res.put( "files", array );
+                    response.setHeader( "Access-Control-Allow-Origin", "*" );
+                    response.setHeader( "Access-Control-Allow-Credentials", "true" );
+                    response.setHeader( "Access-Control-Allow-Methods", "POST, GET" );
+                    response.setHeader( "Access-Control-Allow-Headers", "Content-Type" );
+                    response.setContentType( "application/json" );
+                    jsonResp.sendJSON( res );
                 }
-                if(fileToConvert == null && arguments.get( "inputWdlText" ) != null)
-                {
-                    File dir = TempFiles.getTempDirectory();
-                    
-                    fileToConvert = new File(dir, "input.wdl");
-                    ApplicationUtils.writeString(fileToConvert, arguments.getOrDefault( "inputWdlText", "" ).toString());
-                }
-                if(fileToConvert != null)
-                {
-                    String convertType = arguments.getOrDefault( "convertType", "diagram" ).toString();
-                    Diagram diagram = null;
-                    try 
-                    {
-                        diagram = Converter.loadDiagram(fileToConvert.getAbsolutePath());
-                    }
-                    catch (Exception ex1)
-                    {
-                        sendError(response, "Error loading diagram from wdl: " + ex1.getMessage());
-                        return;
-                    }
-                    File convertedFile = null;
-                    String contentType = "text/xml";
-                    String suffix = "";
-                    if(convertType.equals( "diagram" )) //wdl to diagram
-                    {
-                        String outputType = arguments.getOrDefault( "outputType", "image" ).toString();
-                        
-                        if(outputType.equals( "image" )) //png image
-                        {
-                            suffix = ".png";
-                            convertedFile = TempFiles.file("export_image"+suffix);
-                            try (FileOutputStream fos = new FileOutputStream( convertedFile ))
-                            {
-                                Converter.exportImage(diagram, convertedFile);
-                                contentType = "image/x-png";
-                            }
-                            catch(Exception ex1)
-                            {
-                                sendError(response, "Error writing diagram image: " + ex1.getMessage());
-                                return;
-                            }
-                        }
-                        else //plain diagram file
-                        {
-                            convertedFile = TempFiles.file("export_diagram");
-                            try (FileOutputStream fos = new FileOutputStream( convertedFile ))
-                            {
-                                DiagramXmlWriter writer = diagram.getType().getDiagramWriter();
-                                writer.setStream( fos );
-                                writer.write( diagram );
-                            }
-                            catch(Exception ex1)
-                            {
-                                sendError(response, "Error writing diagram file: " + ex1.getMessage());
-                                return;
-                            }
-                        }
-                    }
-                    else if(convertType.equals( "nextflow" ))
-                    {
-                        suffix = ".nf";
-                        convertedFile = TempFiles.file("export_nextflow.nf");
-                        try 
-                        {
-                            String nextFlow = new NextFlowGenerator().generate(diagram);
-                            ApplicationUtils.writeString(convertedFile, nextFlow);
-                        }
-                        catch(Exception ex1)
-                        {
-                            sendError(response, "Error converting to nextflow: " + ex1.getMessage());
-                            return;
-                        }
-                        
-                    }
-                    else
-                    {
-                        sendError(response, "Not supported convert format " + convertType);
-                        return;
-                    }
-                    
-                    if(convertedFile != null)
-                    {
-                        BiosoftWebResponse resp = new BiosoftWebResponse(response, response.getOutputStream());
-                        String fileName = ApplicationUtils.getFileNameWithoutExtension(fileToConvert.getName());
-                        resp.setHeader("Content-Disposition", "attachment;filename=\"" + fileName + suffix + "\"");
-                        resp.setHeader("Content-Length", String.valueOf(convertedFile.length()));
-                        resp.setHeader("Access-Control-Allow-Origin", "*");
-                        resp.setHeader("Access-Control-Allow-Credentials", "true");
-                        resp.setHeader("Access-Control-Allow-Methods", "POST, GET");
-                        resp.setHeader("Access-Control-Allow-Headers", "Content-Type");
-                        resp.setContentType(contentType);
-                        ApplicationUtils.copyStream(resp.getOutputStream(), new FileInputStream(convertedFile));
-                        convertedFile.delete();
-                    }
-                    else
-                    {
-                        sendError(response, "Can not convert file " + fileToConvert.getName());
-                    }
-                }            
                 else
                 {
-                    sendError(response, "No input data to convert");
+                    jsonResp.error( "No wdl files in supplied archive " + fileToConvert.getName() );
                 }
+                return;
+
             }
-            else
+            catch (IllegalArgumentException e)
             {
-                sendError(response, "Incorrect form data");
+                //not an archive
             }
+            catch (Exception e)
+            {
+                sendError( response, "There was an error: " + e.getMessage() );
+                return;
+            }
+
         }
-        catch(Exception e)
+        else
         {
-            sendError(response, "There was an error: " + e.getMessage());
+            sendError( response, "Incorrect form data" );
+            return;
+        }
+
+        if( fileToConvert != null )
+        {
+            JSONObject result = new JSONObject();
+            Diagram diagram = null;
+            try
+            {
+                diagram = Converter.loadDiagram( fileToConvert.getAbsolutePath() );
+            }
+            catch (Exception ex1)
+            {
+                sendError( response, "Error loading diagram from wdl: " + ex1.getMessage() );
+                return;
+            }
+            List<String> convertErrors = new ArrayList<>();
+            File convertedFile = TempFiles.file( "export_image.png" );
+            try (FileOutputStream fos = new FileOutputStream( convertedFile ))
+            {
+                Converter.exportImage( diagram, convertedFile );
+                byte[] imageBytes = Files.readAllBytes( convertedFile.toPath() );
+                result.put( "diagram", Base64.getEncoder().encodeToString( imageBytes ) );
+                convertedFile.delete();
+            }
+            catch (Exception ex1)
+            {
+                convertedFile.delete();
+                convertErrors.add( "Error writing diagram image: " + ex1.getMessage() );
+            }
+            //TODO: uncomment if diagram xml is required
+            //            try (ByteArrayOutputStream baos = new ByteArrayOutputStream())
+            //            {
+            //                DiagramXmlWriter writer = diagram.getType().getDiagramWriter();
+            //                writer.setStream( baos );
+            //                writer.write( diagram );
+            //                String diagramStr = baos.toString( StandardCharsets.UTF_8 );
+            //                result.put( "diagram_xml", diagramStr );
+            //            }
+            //            catch (Exception ex1)
+            //            {
+            //                convertErrors.add( "Error writing diagram file: " + ex1.getMessage() );
+            //            }
+            
+            try
+            {
+                String nextFlow = new NextFlowGenerator().generate( diagram );
+                result.put( "nextflow", nextFlow );
+            }
+            catch (Exception ex1)
+            {
+                convertErrors.add( "Error converting to nextflow: " + ex1.getMessage() );
+            }
+            if( !convertErrors.isEmpty() )
+            {
+                sendError( response, convertErrors.stream().collect( Collectors.joining( "\n" ) ) );
+                return;
+            }
+            //TODO: if not all convertions went bad, send partial result and errors
+            response.setHeader( "Access-Control-Allow-Origin", "*" );
+            response.setHeader( "Access-Control-Allow-Credentials", "true" );
+            response.setHeader( "Access-Control-Allow-Methods", "POST, GET" );
+            response.setHeader( "Access-Control-Allow-Headers", "Content-Type" );
+            response.setContentType( "application/json" );
+
+            BiosoftWebResponse resp = new BiosoftWebResponse( response, response.getOutputStream() );
+            JSONResponse jsonResp = new JSONResponse( resp );
+            jsonResp.sendJSON( result );
+        }
+        else
+        {
+            sendError( response, "Nothing to convert" );
         }
     }
     
+    private static List<String> collectWdlFiles(Path base, Path dir)
+    {
+        List<String> result = new ArrayList<>();
+        try
+        {
+            Files.walkFileTree( base, new SimpleFileVisitor<Path>()
+            {
+                @Override
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException
+                {
+                    if( dir.getFileName().toString().equals( ".git" ) )
+                    {
+                        return FileVisitResult.SKIP_SUBTREE;
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
+                {
+                    if( file.getFileName().toString().endsWith( ".wdl" ) )
+                    {
+                        result.add( dir.relativize( file ).toString() );
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+            } );
+        }
+        catch (IOException e)
+        {
+            // handle or log
+        }
+        return result;
+    }
+
     private static void sendError(final HttpServletResponse response, final String errorMessage) throws IOException
     {
         response.setHeader("Access-Control-Allow-Origin", "*");
         new JSONResponse(new BiosoftWebResponse(response, response.getOutputStream())).error(errorMessage);
-        //response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, errorMessage);
     }
     
     private static synchronized File getUploadFolder()
