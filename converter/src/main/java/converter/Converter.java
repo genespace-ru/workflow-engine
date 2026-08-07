@@ -6,6 +6,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.annotation.Nonnull;
 import javax.imageio.ImageIO;
@@ -15,18 +17,28 @@ import javax.imageio.stream.ImageOutputStream;
 import biouml.model.Diagram;
 import biouml.model.util.DiagramImageGenerator;
 import biouml.plugins.wdl.nextflow.NextFlowGenerator;
+import biouml.plugins.wdl.nextflow.NextFlowRunner;
+import ru.biosoft.util.ApplicationUtils;
 import biouml.plugins.wdl.FileScriptLoader;
 import biouml.plugins.wdl.ScriptLoader;
+import biouml.plugins.wdl.diagram.DiagramGenerator;
 import biouml.plugins.wdl.diagram.WDLImporter;
-import biouml.plugins.wdl.diagram.WDLLayouter;
-import ru.biosoft.util.ApplicationUtils;
+import biouml.plugins.wdl.model.ScriptInfo;
 
 public class Converter
 {
 
     public static void main(String ... args)
     {
-//    	args = new String[] {"C:/Users/Damag/nextflowtest/ngs-pipelines-main/ngs-pipelines-main/pipelines/brca/wdl/workflows/brca_.wdl", "-i"};
+
+//    	args = new String[] {"C:/Users/Damag/nextflowtest/ngs-pipelines-main/ngs-pipelines-main/common/wdl/tasks/vep.wdl"};
+//    	args = new String[] {"C:/Users/Damag/nextflowtest/ngs-pipelines-main/ngs-pipelines-main/pipelines/brca/wdl/workflows/basic_directory.wdl", "-i"};
+//    	args = new String[] {"C:/Users/Damag/nextflowtest/modelseed_from_annotation.wdl", "-i"};
+//    	args = new String[] {"C:/Users/Damag/nextflowtest/1.5_PROKKA"};
+//    	args = new String[] {"C:/Users/Damag/nextflowtest/ngs-pipelines-main/ngs-pipelines-main/pipelines/brca/wdl/workflows/brca.wdl", "-i"};
+//    	args = new String[] {"C:/Users/Damag/nextflowtest/ngs-pipelines-main/ngs-pipelines-main/common/wdl/tasks/multiqc.wdl"};
+//    	args = new String[] {"C:/Users/Damag/nextflowtest/ngs-pipelines-main/ngs-pipelines-main/common/wdl/tasks/samtools_.wdl"};
+//    	args = new String[] {"C:/Users/Damag/nextflowtest/ss.wdl"};
     	try
         {
             ConverterParameters parameters = new ConverterParameters(args);
@@ -50,47 +62,73 @@ public class Converter
                 parent = new File(jarPath).getParent();
                 absolutePath = parent + "/" + filePath;
             }
-            String name = new File(absolutePath).getName();
-            Diagram diagram = loadDiagram(absolutePath);
+            
+            File inputFile = new File(absolutePath);
+             
+			String name = inputFile.getName();
+			name = name.substring(0, name.lastIndexOf("."));
+					
+			Map<String, Diagram> diagrams = loadDiagrams(absolutePath);
 
-            System.out.println("Should generate image: "+parameters.showImage);
-            if( parameters.showImage )
-            {
-                File imageFile = new File(parent + "/" + name + ".png");
-                exportImage(diagram, imageFile);
-                log("Image generated: " + imageFile.getName());
-            }
-
-            String nextFlow = new NextFlowGenerator().generate(diagram);
-            File nextFlowFile = new File(parent + "/" + name + ".nf");
-            ApplicationUtils.writeString(nextFlowFile, nextFlow);
-            log("Nextflow script generated: " + nextFlowFile.getName());
-            log("All done!");
-
+			if (diagrams.size() == 1) 
+			{
+				Diagram diagram = diagrams.values().iterator().next();
+				generateResults( diagram,  inputFile.getParentFile(),  name,   parameters);
+                NextFlowRunner.generateFunctions( inputFile.getParentFile().getCanonicalPath() );
+			}
+			else
+			{
+				File resultFolder = new File(inputFile.getParentFile(), name);
+				resultFolder.mkdir();
+				for (Entry<String, Diagram> entry: diagrams.entrySet())
+				{
+					String entryName = entry.getKey();
+					entryName = entryName.endsWith(".wdl") ? entryName.substring(0, entryName.length() - 4) : entryName;
+					Diagram entryDiagram = entry.getValue();
+					generateResults( entryDiagram,  resultFolder,  entryName,   parameters);
+				}
+				 NextFlowRunner.generateFunctions( resultFolder.getCanonicalPath() );
+				 generateConfig(resultFolder);
+			}
         }
         catch( Exception ex )
         {
             ex.printStackTrace();
         }
     }
+    
+    private static void generateResults(Diagram diagram, File parent, String name,  ConverterParameters parameters) throws Exception
+    {
+		System.out.println("Should generate image: " + parameters.showImage);
+		if (parameters.showImage) 
+		{
+			File imageFile = new File(parent + "/" + name + ".png");
+			exportImage(diagram, imageFile);
+			log("Image generated: " + imageFile.getName());
+		}
 
-    protected static Diagram loadDiagram(String path) throws Exception
+		String nextFlow = new NextFlowGenerator().generate(diagram);
+		File nextFlowFile = new File(parent + "/" + name + ".nf");
+		ApplicationUtils.writeString(nextFlowFile, nextFlow);
+		log("Nextflow script generated: " + nextFlowFile.getName());
+		log("All done!");
+    }
+
+    protected static Map<String, Diagram> loadDiagrams(String path) throws Exception
     {
         File f = new File(path);
-
         String name = f.getName();
         name = f.getName().endsWith(".wdl") ? name.substring(0, name.length() - 4) : name;
         WDLImporter importer = new WDLImporter();
         importer.setScriptLoader(new FileScriptLoader(ScriptLoader.WDL_TYPE, f.getParentFile()));
         String text = ApplicationUtils.readAsString(f);
-        Diagram diagram = importer.generateDiagram(text , name, null);
-        new WDLLayouter().layout( diagram );
-        return diagram;
+        ScriptInfo scriptInfo = importer.readScript(name, text);
+        DiagramGenerator generator = new DiagramGenerator();
+        generator.generateDiagram(scriptInfo, null, name);
+        return generator.getAllImports();
     }
 
-    public static void exportImage(@Nonnull
-    Diagram diagram, @Nonnull
-    File file) throws Exception
+    public static void exportImage(@Nonnull Diagram diagram, @Nonnull File file) throws Exception
     {
         BufferedImage image = DiagramImageGenerator.generateDiagramImage(diagram, 1, true);
 
@@ -115,5 +153,12 @@ public class Converter
         Calendar cal = Calendar.getInstance();
         SimpleDateFormat sdf = new SimpleDateFormat("[ HH:mm:ss ] ");
         return sdf.format(cal.getTime());
+    }
+    
+    private static File generateConfig(File parent) throws Exception
+    {
+        File config = new File(parent, "nextflow.config");
+        ApplicationUtils.writeString( config, "docker.enabled = true" );
+        return config;
     }
 }
