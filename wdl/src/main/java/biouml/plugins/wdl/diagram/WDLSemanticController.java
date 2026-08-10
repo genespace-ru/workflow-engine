@@ -6,13 +6,17 @@ import java.awt.Rectangle;
 
 import javax.annotation.Nonnull;
 
+
 import biouml.model.Compartment;
 import biouml.model.DefaultSemanticController;
 import biouml.model.Diagram;
 import biouml.model.DiagramElement;
 import biouml.model.DiagramElementGroup;
 import biouml.model.Edge;
+import biouml.model.InitialElementProperties;
 import biouml.model.Node;
+import biouml.standard.diagram.CreateEdgeAction;
+import biouml.standard.diagram.CreateEdgeAction.EdgeCreator;
 import biouml.standard.type.Base;
 import biouml.standard.type.Stub;
 import ru.biosoft.exception.ExceptionRegistry;
@@ -28,22 +32,23 @@ public class WDLSemanticController extends DefaultSemanticController
     {
         try
         {
-//            if( type.equals( WDLConstants.LINK_TYPE ) )
-//            {
-//                new CreateEdgeAction().createEdge( pt, viewEditor, new LinkCreator() );
-//                return null;
-//            }
-//            else
-//            {
-//                Object properties = getPropertiesByType( parent, type, pt );
-//                if( properties instanceof InitialElementProperties )
-//                {
-//                    PropertiesDialog dialog = new PropertiesDialog( Application.getApplicationFrame(), "New element", properties );
-//                    if( dialog.doModal() )
-//                        return ( (InitialElementProperties)properties ).createElements( parent, pt, viewEditor );
-//                    return DiagramElementGroup.EMPTY_EG;
-//                }
-//            }
+            if( type.equals( WDLConstants.LINK_TYPE ) )
+            {
+                new CreateEdgeAction().createEdge( pt, viewEditor, new LinkCreator() );
+                return null;
+            }
+            else
+            {
+                Object properties = getPropertiesByType( parent, type, pt );
+                if( properties instanceof InitialElementProperties )
+                {
+                    //TODO: commented Dialog
+                    //                    PropertiesDialog dialog = new PropertiesDialog( Application.getApplicationFrame(), "New element", properties );
+                    //                    if( dialog.doModal() )
+                        return ((InitialElementProperties) properties).createElements( parent, pt, viewEditor );
+                    //return DiagramElementGroup.EMPTY_EG;
+                }
+            }
         }
         catch( Throwable t )
         {
@@ -84,15 +89,15 @@ public class WDLSemanticController extends DefaultSemanticController
         return null;
     }
 
-//    public class LinkCreator implements EdgeCreator
-//    {
-//        @Override
-//        public Edge createEdge(@Nonnull Node in, @Nonnull Node out, boolean temporary)
-//        {
-//            Edge result = new Edge( new Stub( null, in.getName() + " interact " + out.getName(), WDLConstants.LINK_TYPE ), in, out );
-//            return result;
-//        }
-//    }
+    public class LinkCreator implements EdgeCreator
+    {
+        @Override
+        public Edge createEdge(@Nonnull Node in, @Nonnull Node out, boolean temporary)
+        {
+            Edge result = new Edge( new Stub( null, in.getName() + " interact " + out.getName(), WDLConstants.LINK_TYPE ), in, out );
+            return result;
+        }
+    }
 
     @Override
     public Dimension move(DiagramElement de, Compartment newParent, Dimension offset, Rectangle oldBounds) throws Exception
