@@ -232,8 +232,9 @@ public class WDLImporter implements DataElementImporter
     private static CallInfo createCallInfo(AstCall astCall)
     {
         CallInfo callInfo = new CallInfo();
-        callInfo.setTaskName( astCall.getName() );
-        callInfo.setAlias( astCall.getAlias() == null ? astCall.getName() : astCall.getAlias() );
+        callInfo.setTaskName(astCall.getName());
+        callInfo.setSource(astCall.getSource());
+        callInfo.setAlias(astCall.getAlias());
 
         for( AstSymbol symbol : astCall.getInputs() )
         {
