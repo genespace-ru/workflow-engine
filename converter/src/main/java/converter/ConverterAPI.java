@@ -38,14 +38,9 @@ import ru.biosoft.util.archive.ArchiveFactory;
 
 public class ConverterAPI
 {
-    private static Map<Long, File> idToFolder = new ConcurrentHashMap<>();
+    protected static Map<Long, File> idToFolder = new ConcurrentHashMap<>();
     private static AtomicLong id = new AtomicLong();
     public static final String UPLOAD_DIRECTORY = System.getProperty( "biouml.upload_dir", System.getProperty("java.io.tmpdir"));
-    
-    public void convert()
-    {
-        
-    }
     
     public static void handle(final HttpServletRequest request, final HttpServletResponse response, String method) throws IOException
     {
@@ -62,8 +57,8 @@ public class ConverterAPI
         Map<String, String[]> uriParameters = request.getParameterMap();
         
         final Map<String, Object> arguments = new HashMap<>();
-        response.setStatus(HttpServletResponse.SC_OK);
         
+
         File fileToConvert = null;
         
         for ( String uriParameter : uriParameters.keySet() )
@@ -141,6 +136,7 @@ public class ConverterAPI
                     idToFolder.put( idl, archivedFolder );
                     JSONArray array = new JSONArray( files );
                     res.put( "files", array );
+                    response.setStatus( HttpServletResponse.SC_OK );
                     response.setHeader( "Access-Control-Allow-Origin", "*" );
                     response.setHeader( "Access-Control-Allow-Credentials", "true" );
                     response.setHeader( "Access-Control-Allow-Methods", "POST, GET" );
@@ -159,6 +155,11 @@ public class ConverterAPI
             {
                 //not an archive
             }
+            catch (IOException e)
+            {
+                sendError( response, "There was an error during unpack: " + e.getMessage() );
+                return;
+            }
             catch (Exception e)
             {
                 sendError( response, "There was an error: " + e.getMessage() );
@@ -174,11 +175,29 @@ public class ConverterAPI
 
         if( fileToConvert != null )
         {
+            boolean isMultiple = false;
             JSONObject result = new JSONObject();
+            Map<String, Diagram> diagrams = null;
             Diagram diagram = null;
             try
             {
-                diagram = Converter.loadDiagram( fileToConvert.getAbsolutePath() );
+                diagrams = Converter.loadDiagrams( fileToConvert.getAbsolutePath() );
+                if( diagrams.isEmpty() )
+                {
+                    sendError( response, "No diagrams were loaded from wdl" );
+                    return;
+                }
+                String mainDiagramName = Converter.getDiagramName( fileToConvert.getAbsolutePath() );
+                if( diagrams.size() == 1 )
+                    diagram = diagrams.entrySet().iterator().next().getValue();
+                else
+                {
+                    isMultiple = true;
+                    if( diagrams.containsKey( mainDiagramName ) )
+                        diagram = diagrams.get( mainDiagramName );
+                }
+
+                //diagram = Converter.loadDiagram( fileToConvert.getAbsolutePath() );
             }
             catch (Exception ex1)
             {
@@ -186,48 +205,90 @@ public class ConverterAPI
                 return;
             }
             List<String> convertErrors = new ArrayList<>();
-            File convertedFile = TempFiles.file( "export_image.png" );
-            try (FileOutputStream fos = new FileOutputStream( convertedFile ))
+            if( diagram != null )
             {
-                Converter.exportImage( diagram, convertedFile );
-                byte[] imageBytes = Files.readAllBytes( convertedFile.toPath() );
-                result.put( "diagram", Base64.getEncoder().encodeToString( imageBytes ) );
-                convertedFile.delete();
+                File convertedFile = TempFiles.file( "export_image.png" );
+                try (FileOutputStream fos = new FileOutputStream( convertedFile ))
+                {
+                    Converter.exportImage( diagram, convertedFile );
+                    byte[] imageBytes = Files.readAllBytes( convertedFile.toPath() );
+                    result.put( "diagram", Base64.getEncoder().encodeToString( imageBytes ) );
+                }
+                catch (Exception ex1)
+                {
+                    convertErrors.add( "Error writing diagram image: " + ex1.getMessage() );
+                }
+                finally
+                {
+                    convertedFile.delete();
+                }
+                //TODO: uncomment if diagram xml is required
+                //            try (ByteArrayOutputStream baos = new ByteArrayOutputStream())
+                //            {
+                //                DiagramXmlWriter writer = diagram.getType().getDiagramWriter();
+                //                writer.setStream( baos );
+                //                writer.write( diagram );
+                //                String diagramStr = baos.toString( StandardCharsets.UTF_8 );
+                //                result.put( "diagram_xml", diagramStr );
+                //            }
+                //            catch (Exception ex1)
+                //            {
+                //                convertErrors.add( "Error writing diagram file: " + ex1.getMessage() );
+                //            }
+
+                try
+                {
+                    String nextFlow = new NextFlowGenerator().generate( diagram );
+                    result.put( "nextflow", nextFlow );
+                }
+                catch (Exception ex1)
+                {
+                    convertErrors.add( "Error converting to nextflow: " + ex1.getMessage() );
+                }
             }
-            catch (Exception ex1)
-            {
-                convertedFile.delete();
-                convertErrors.add( "Error writing diagram image: " + ex1.getMessage() );
-            }
-            //TODO: uncomment if diagram xml is required
-            //            try (ByteArrayOutputStream baos = new ByteArrayOutputStream())
-            //            {
-            //                DiagramXmlWriter writer = diagram.getType().getDiagramWriter();
-            //                writer.setStream( baos );
-            //                writer.write( diagram );
-            //                String diagramStr = baos.toString( StandardCharsets.UTF_8 );
-            //                result.put( "diagram_xml", diagramStr );
-            //            }
-            //            catch (Exception ex1)
-            //            {
-            //                convertErrors.add( "Error writing diagram file: " + ex1.getMessage() );
-            //            }
             
-            try
+            if( isMultiple )
             {
-                String nextFlow = new NextFlowGenerator().generate( diagram );
-                result.put( "nextflow", nextFlow );
+                Long conversionId = id.incrementAndGet();
+                result.put( "downloadId", conversionId.toString() );
+                File convertedFolder = TempFiles.dir( "converted_" + conversionId );
+                idToFolder.put( conversionId, convertedFolder );
+                File diagramsFolder = new File( convertedFolder, "diagrams" );
+                diagramsFolder.mkdir();
+                File nextflowsFolder = new File( convertedFolder, "nextflow" );
+                nextflowsFolder.mkdir();
+                for ( String name : diagrams.keySet() )
+                {
+                    Diagram current = diagrams.get( name );
+                    File convertedFile = new File( diagramsFolder, name );
+                    File nextflowFile = new File( nextflowsFolder, name + ".nf" );
+                    try
+                    {
+                        Converter.exportImage( current, convertedFile );
+                        String nextFlow = new NextFlowGenerator().generate( current );
+                        ApplicationUtils.writeString( nextflowFile, nextFlow );
+                    }
+                    catch (Exception ex1)
+                    {
+                        convertErrors.add( "Error converting: " + ex1.getMessage() );
+                    }
+                }
+
             }
-            catch (Exception ex1)
-            {
-                convertErrors.add( "Error converting to nextflow: " + ex1.getMessage() );
-            }
+
             if( !convertErrors.isEmpty() )
             {
-                sendError( response, convertErrors.stream().collect( Collectors.joining( "\n" ) ) );
-                return;
+                if( !result.has( "diagram" ) && !result.has( "nextflow" ) )
+                {
+                    sendError( response, convertErrors.stream().collect( Collectors.joining( "\n" ) ) );
+                    return;
+                }
+                else
+                {
+                    result.put( "error", convertErrors.stream().collect( Collectors.joining( "\n" ) ) );
+                }
             }
-            //TODO: if not all convertions went bad, send partial result and errors
+            response.setStatus( HttpServletResponse.SC_OK );
             response.setHeader( "Access-Control-Allow-Origin", "*" );
             response.setHeader( "Access-Control-Allow-Credentials", "true" );
             response.setHeader( "Access-Control-Allow-Methods", "POST, GET" );
@@ -244,11 +305,9 @@ public class ConverterAPI
         }
     }
     
-    private static List<String> collectWdlFiles(Path base, Path dir)
+    private static List<String> collectWdlFiles(Path base, Path dir) throws IOException
     {
         List<String> result = new ArrayList<>();
-        try
-        {
             Files.walkFileTree( base, new SimpleFileVisitor<Path>()
             {
                 @Override
@@ -271,17 +330,13 @@ public class ConverterAPI
                     return FileVisitResult.CONTINUE;
                 }
             } );
-        }
-        catch (IOException e)
-        {
-            // handle or log
-        }
         return result;
     }
 
-    private static void sendError(final HttpServletResponse response, final String errorMessage) throws IOException
+    protected static void sendError(final HttpServletResponse response, final String errorMessage) throws IOException
     {
         response.setHeader("Access-Control-Allow-Origin", "*");
+        response.setStatus( HttpServletResponse.SC_BAD_REQUEST );
         new JSONResponse(new BiosoftWebResponse(response, response.getOutputStream())).error(errorMessage);
     }
     

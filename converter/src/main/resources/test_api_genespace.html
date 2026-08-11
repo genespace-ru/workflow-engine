@@ -34,19 +34,45 @@
                 <textarea class="form-control" id="input_wdl_text" name="inputWdlText" rows="25"></textarea>
                 </div>
                 <div class="form-group" id="div_selector" style="display:none;">
-                    <label for="input_wdl_selector" class="form-label">Available files</label>
+                    <div class="alert alert-info py-1 mb-2">Archive uploaded — select the main WDL file:</div>
                     <select class="form-select" id="input_wdl_selector" name="location">
                         <option value="">-- select a file --</option>
                     </select>
-                    <label for="input_wdl_selector" class="form-label">You have uploaded an archive. Please, select main WDL for converting.</label>
                     <input type="hidden" id="hidden_id" name="folderId" value="">
                 </div>
             </div>
                         
              <button type="submit" id="submit_convert" class="btn btn-primary">Submit</button>
+             <button type="button" id="btn_reset" class="btn btn-secondary ms-2">Reset</button>
+             <span id="convert_spinner" class="ms-3" style="display:none;">
+                   <div class="spinner-border text-primary" role="status">
+                       <span class="visually-hidden">Loading...</span>
+                   </div>
+                   Converting...
+             </span>
+
         </form>
     </div>
     <div class="container mt-5" id="result_content">
+    <div id="partial_error_section" class="alert alert-warning" style="display:none;"></div>
+    <div id="download_section" class="mb-3" style="display:none;">
+        <a id="download_link" class="btn btn-success" href="#">
+            <i class="bi bi-download"></i> Download all files (.zip)
+        </a>
+        <a id="download_link_diagrams" class="btn btn-success" href="#">
+            <i class="bi bi-download"></i> Download diagrams (.zip)
+        </a>
+        <a id="download_link_nextflow" class="btn btn-success" href="#">
+            <i class="bi bi-download"></i> Download nextflow scripts (.zip)
+        </a>
+        <span id="download_spinner" class="ms-3" style="display:none;">
+            <div class="spinner-border text-success" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            Generating ZIP...
+        </span>
+
+    </div>
     <ul class="nav nav-tabs" id="myTab" role="tablist">
       <li class="nav-item" role="presentation">
         <button class="nav-link active" id="diagram-tab" data-bs-toggle="tab" data-bs-target="#diagram" type="button" role="tab" aria-controls="diagram" aria-selected="true">Diagram</button>
@@ -130,6 +156,7 @@
                       $("#result_content").hide();
                       $("#input_wdl_file").val("");
                       $("#submit_convert").removeAttr("disabled");
+                      $("#convert_spinner").hide();
                   });
 
               // Handle selector change
@@ -153,6 +180,26 @@
                 }
               });
               
+              // Reset button
+              $("#btn_reset").click(function() {
+                  $("input[name='wdlType']").prop('checked', false);
+                  $("#radio_wdl_file").prop('checked', true);
+                  $(".input_wdl_type_selector").hide();
+                  $("#div_file").show();
+                  $("#div_selector").hide();
+                  $("#input_wdl_selector").empty().append('<option value="">-- select a file --</option>');
+                  $("#hidden_id").val("");
+                  $("#input_wdl_file").val("");
+                  $("#input_wdl_text").val("");
+                  $("#newxflow_result").text("");
+                  $("#diagram_image").attr("src", "");
+                  $("#partial_error_section").hide().html("");
+                  $("#download_section").hide();
+                  $("#result_content").hide();
+                  $("#convert_spinner").hide();
+                  $("#submit_convert").removeAttr("disabled");
+              });
+
               $("#div_file").show();
               $("#result_content").hide();
               
@@ -203,13 +250,22 @@
                     formData.delete("location");
                     formData.delete("folderId");
                 }
+                $("#convert_spinner").show();
+                $("#submit_convert").prop("disabled", true);
                 const image = document.querySelector("#diagram_image");
                 fetch(event.target.action, {
                     method: 'POST',
                     body:  formData
                 }).then((response) => {
+                    $("#convert_spinner").hide();
+                    $("#submit_convert").prop("disabled", false);
                     if (!response.ok) {
-                      throw new Error(`HTTP error! Status: ${response.status}`);
+                      return response.json().then(body => {
+                          var msg = (body.values && body.values.error) || body.message || "HTTP error! Status: " + response.status;
+                          return { __error: msg };
+                      }).catch(() => {
+                          return { __error: "HTTP error! Status: " + response.status };
+                      });
                     }
                     if (response.headers.get("content-type").includes("application/json")) {
                         return response.json();
@@ -217,11 +273,30 @@
                     else
                         return response.blob();// or response.text() or whatever the server sends
                 }).then((result) => {
+                    if (result && result.__error) {
+                        showResponseError(result.__error);
+                        return;
+                    }
                     if (result && typeof result === 'object' && result.values.diagram) {
                         // JSON response
                         image.src = "data:image/png;base64," + result.values.diagram;
                         $("#newxflow_result").text(result.values.nextflow);
                         $("#result_content").show();
+                        if(result.values.error)
+                        {
+                            $("#partial_error_section").html(result.values.error.replace(/\n/g, '<br>')).show();
+                        }
+                        else
+                        {
+                            $("#partial_error_section").hide();
+                        }
+                        if(result.values.downloadId)
+                        {
+                            $("#download_section").show();
+                            $("#download_link").attr("href", "https://workflow.genespace.ru/diagrams/wdl/download?type=full&downloadId=" + result.values.downloadId)
+                            $("#download_link_diagrams").attr("href", "https://workflow.genespace.ru/diagrams/wdl/download?type=diagrams&downloadId=" + result.values.downloadId)
+                            $("#download_link_nextflow").attr("href", "https://workflow.genespace.ru/diagrams/wdl/download?type=nextflow&downloadId=" + result.values.downloadId)
+                        }
                     }else if(result && typeof result === 'object' && result.values.folderId && result.values.files)
                     {
                         // Store the folderId
@@ -257,43 +332,34 @@
                         $("#result_content").show();
                     }
                   }).catch((error) => {
-                    if (error instanceof Error) {
-                        return { error }
-                      }
-                    console.log("Error occurred");
-                    try {
-                        error.json().then(body => {
-                            showResponseError(body.message);
-                            console.log("message = "+body.message);
-                        });
-                    } catch (e) {
-                        console.log("Error parsing promise");
-                        console.log(error);
-                    } 
-
+                    console.log("Error occurred:", error);
+                    if (error instanceof Error && error.message) {
+                        showResponseError(error.message);
+                    }
                 });
             });
           });
           
         function showResponseError(message)
         {
+            var formatted = message.replace(/\n/g, '<br>');
             var isShown = $("#modal_error").hasClass('in') || $('.modal').hasClass('show');
             if(isShown)
             {
-                var oldMessage = $("#modal_error_message").text().trim();
-                var newMessage = message.trim();
+                var oldMessage = $("#modal_error_message").html().trim();
+                var newMessage = formatted.trim();
                 if(oldMessage == newMessage)
                 {
                     return;
                 }
                 else
                 {
-                    $("#modal_error_message").text(oldMessage + "<br>" + message);
+                    $("#modal_error_message").html(oldMessage + '<br>' + formatted);
                 }
             }
             else
             {
-                $("#modal_error_message").text(message);
+                $("#modal_error_message").html(formatted);
                 $("#modal_error").modal("show");
             }
         }
