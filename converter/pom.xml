@@ -58,19 +58,21 @@
   <build>
     <finalName>WDL2Nextflow</finalName>
     <plugins>
-      <!-- Maven Shade Plugin -->
+      <!-- Maven Shade Plugin for CLI fat JAR (separate artifact, not deployed to Central) -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
         <version>3.4.0</version>
         <executions>
           <execution>
+            <id>shade-cli</id>
             <phase>package</phase>
             <goals>
               <goal>shade</goal>
             </goals>
             <configuration>
-              <shadedArtifactAttached>false</shadedArtifactAttached>
+              <shadedArtifactAttached>true</shadedArtifactAttached>
+              <shadedClassifierName>exec</shadedClassifierName>
               <createDependencyReducedPom>false</createDependencyReducedPom>
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
