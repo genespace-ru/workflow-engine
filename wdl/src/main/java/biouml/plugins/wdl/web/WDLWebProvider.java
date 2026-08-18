@@ -1,7 +1,6 @@
 package biouml.plugins.wdl.web;
 
 import java.io.OutputStream;
-import java.io.StringReader;
 import java.util.logging.Level;
 
 import org.json.JSONArray;
@@ -9,15 +8,13 @@ import org.json.JSONObject;
 
 import biouml.model.Diagram;
 import biouml.model.server.WebDiagramsProvider;
-import biouml.plugins.wdl.cwl.CWLGenerator;
-import biouml.plugins.wdl.nextflow.NextFlowGenerator;
-import biouml.plugins.wdl.nextflow.NextFlowRunner;
 import biouml.plugins.wdl.WDLGenerator;
 import biouml.plugins.wdl.WorkflowSettings;
+import biouml.plugins.wdl.cwl.CWLGenerator;
 import biouml.plugins.wdl.diagram.WDLImporter;
 import biouml.plugins.wdl.diagram.WDLLayouter;
-import biouml.plugins.wdl.parser.AstStart;
-import biouml.plugins.wdl.parser.WDLParser;
+import biouml.plugins.wdl.nextflow.NextFlowGenerator;
+import biouml.plugins.wdl.nextflow.NextFlowRunner;
 import ru.biosoft.access.core.DataCollection;
 import ru.biosoft.access.core.DataElement;
 import ru.biosoft.access.core.DataElementImporter;
@@ -33,7 +30,6 @@ import ru.biosoft.util.TempFiles;
 
 public class WDLWebProvider extends WebJSONProviderSupport
 {
-    //private static final String GET_DIAGRAM_VIEW = "get_diagram_view";
     private static final String DIAGRAM_TO_WDL = "diagram2wdl";
     private static final String WDL_TO_DIAGRAM = "wdl2diagram";
     private static final String RUN_WDL = "run";
@@ -45,17 +41,6 @@ public class WDLWebProvider extends WebJSONProviderSupport
     {
         
         String action = arguments.getAction();
-        //        if( GET_DIAGRAM_VIEW.equals( action ) )
-        //        {
-        //            WDLScript script = arguments.getDataElement( WDLScript.class );
-        //            WDLDiagramTransformer transformer = new WDLDiagramTransformer();
-        //            FileDataElement fde = new FileDataElement( script.getName(), null, script.getFile() );
-        //            Diagram diagram = transformer.transformInput( fde );
-        //            View view = WebDiagramsProvider.createView( diagram );
-        //            JSONObject json = view.toJSON();
-        //            response.sendJSON( json );
-        //        }
-        //        else 
         if( DIAGRAM_TO_WDL.equals( action ) )
         {
             DataElementPath diagramPath = arguments.getDataElementPath();
@@ -132,30 +117,4 @@ public class WDLWebProvider extends WebJSONProviderSupport
             }
         }
     }
-
-    //    public void importResults(Diagram diagram, WorkflowSettings settings) throws Exception
-    //    {
-    //        if( settings.getOutputPath() == null )
-    //            return;
-    //        DataCollection dc = settings.getOutputPath().getDataCollection();
-    //
-    //        for ( Compartment n : WDLUtil.getAllCalls( diagram ) )
-    //        {
-    //            String taskRef = WDLUtil.getTaskRef( n );
-    //            String folderName = (taskRef);
-    //            File folder = new File( outputDir, folderName );
-    //            if( !folder.exists() || !folder.isDirectory() )
-    //            {
-    //                log.info( "No results for " + n.getName() );
-    //                continue;
-    //            }
-    //            DataCollection nested = DataCollectionUtils.createSubCollection( dc.getCompletePath().getChildPath( folderName ) );
-    //            for ( File f : folder.listFiles() )
-    //            {
-    //                TextFileImporter importer = new TextFileImporter();
-    //                importer.doImport( nested, f, f.getName(), null, log );
-    //            }
-    //        }
-    //    }
-
 }
