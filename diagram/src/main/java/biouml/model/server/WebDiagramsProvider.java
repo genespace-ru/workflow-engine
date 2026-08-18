@@ -1456,7 +1456,7 @@ public class WebDiagramsProvider extends WebProviderSupport
                     try
                     {
                         DiagramElementGroup elements = ( (InitialElementProperties)bean ).createElements( parent, location, viewEditor );
-                        elements.putToCompartment();
+                        //elements.putToCompartment();
                         result.addAll( elements.getElements() );
                     }
                     catch( Exception e )

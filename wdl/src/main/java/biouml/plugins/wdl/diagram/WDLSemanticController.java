@@ -6,7 +6,6 @@ import java.awt.Rectangle;
 
 import javax.annotation.Nonnull;
 
-
 import biouml.model.Compartment;
 import biouml.model.DefaultSemanticController;
 import biouml.model.Diagram;
@@ -42,11 +41,10 @@ public class WDLSemanticController extends DefaultSemanticController
                 Object properties = getPropertiesByType( parent, type, pt );
                 if( properties instanceof InitialElementProperties )
                 {
-                    //TODO: commented Dialog
                     //                    PropertiesDialog dialog = new PropertiesDialog( Application.getApplicationFrame(), "New element", properties );
                     //                    if( dialog.doModal() )
-                        return ((InitialElementProperties) properties).createElements( parent, pt, viewEditor );
-                    //return DiagramElementGroup.EMPTY_EG;
+                    ((InitialElementProperties) properties).createElements( parent, pt, viewEditor );
+                    return DiagramElementGroup.EMPTY_EG;
                 }
             }
         }
