@@ -105,13 +105,7 @@ public class NextFlowRunner
 
         String parent = context.getOutputDir().toAbsolutePath().toString().replace( "\\", "/" );
         List<String> cmd = new ArrayList<>();
-        if( towerAddress != null )
-        {
-            cmd.add( "export" );
-            cmd.add( "TOWER_WORKFLOW_ID=" + id );
-            cmd.add( "export" );
-            cmd.add( "TOWER_ACCESS_TOKEN=zzz" );
-        }
+
         cmd.add( "nextflow" );
         cmd.add( "run" );
         cmd.add( nextFlowScriptName );
@@ -141,6 +135,11 @@ public class NextFlowRunner
         baseCommand.addAll( cmd );
 
         ProcessBuilder pb = new ProcessBuilder( baseCommand );
+        if( towerAddress != null )
+        {
+            pb.environment().put( "TOWER_WORKFLOW_ID", id );
+            pb.environment().put( "TOWER_ACCESS_TOKEN", "zzz" );
+        }
         if( !useWsl )
             pb.directory( context.getOutputDir().toFile() );
         return pb;
@@ -405,7 +404,7 @@ public class NextFlowRunner
                     + "enabled = true\n"
                     + "mode = 'link'\n"
                     + "overwrite = true\n"
-                    + "}\n" );
+                    + "}\n}\n" );
 		}
 		return config;
 	}

@@ -5,8 +5,10 @@ import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.logging.Logger;
@@ -15,6 +17,7 @@ import com.developmentontheedge.beans.Option;
 import com.developmentontheedge.beans.annot.PropertyName;
 
 import biouml.model.Diagram;
+import biouml.plugins.wdl.FileScriptLoader;
 import biouml.plugins.wdl.ScriptLoader;
 import biouml.plugins.wdl.WorkflowUtil;
 import biouml.plugins.wdl.model.CallInfo;
@@ -475,5 +478,19 @@ public class WDLImporter implements DataElementImporter
         if( wdlFileContent == null )
             return null;
         return wdlFileContent.replace( "<<<", "{" ).replace( ">>>", "}" );
+    }
+
+    public static Map<String, Diagram> loadWDLDiagrams(Path path) throws Exception
+    {
+        String name = path.getFileName().toString();
+        name = path.getFileName().endsWith( ".wdl" ) ? name.substring( 0, name.length() - 4 ) : name;
+
+        WDLImporter importer = new WDLImporter();
+        importer.setScriptLoader( new FileScriptLoader( ScriptLoader.WDL_TYPE, path.getParent().toFile() ) );
+        String text = ApplicationUtils.readAsString( path.toFile() );
+        ScriptInfo scriptInfo = importer.readScript( name, text );
+        DiagramGenerator generator = new DiagramGenerator();
+        generator.generateDiagram( scriptInfo, null, name );
+        return generator.getAllImports();
     }
 }
