@@ -96,15 +96,24 @@ public class WDLImporter implements DataElementImporter
         try (FileInputStream in = new FileInputStream( file );
                 InputStreamReader reader = new InputStreamReader( in, StandardCharsets.UTF_8 ))
         {
-            Diagram diagram = generateDiagram( file, name, parent );
+
+            if( scriptLoader == null )
+                scriptLoader = new FileScriptLoader( ScriptLoader.WDL_TYPE, file.getParentFile() );
+
+            String text = ApplicationUtils.readAsString( file );
+            ScriptInfo info = readScript( name, text );
+            DiagramGenerator generator = new DiagramGenerator();
+            Diagram main = generator.generateDiagram( info, parent, name );
+
+            Map<String, Diagram> diagrams = generator.getAllImports();
 
             if( jobControl != null )
                 jobControl.functionFinished();
 
-            new WDLLayouter().layout( diagram );
-            CollectionFactoryUtils.save( diagram );
+            for ( Diagram diagram : diagrams.values() )
+                CollectionFactoryUtils.save( diagram );
 
-            return diagram;
+            return main;
         }
         catch( Exception e )
         {

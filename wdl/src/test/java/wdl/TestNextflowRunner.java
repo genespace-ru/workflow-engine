@@ -5,8 +5,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
+
+import com.developmentontheedge.beans.DynamicProperty;
+import com.developmentontheedge.beans.DynamicPropertySet;
+import com.developmentontheedge.beans.DynamicPropertySetSupport;
 
 import biouml.plugins.wdl.GeneSpaceContext;
+import biouml.plugins.wdl.WorkflowSettings;
 import biouml.plugins.wdl.nextflow.NextFlowRunner;
 import ru.biosoft.util.ApplicationUtils;
 
@@ -37,7 +43,9 @@ public class TestNextflowRunner
 
         Path outputDir = Paths.get( OUTPUT_DIR );
         GeneSpaceContext context = new GeneSpaceContext( outputDir, outputDir, outputDir, outputDir );
-        NextFlowRunner.runNextFlow( "1", "test", params, nextFlowScript, isWindows, false, towerAddress, context, null );
+        WorkflowSettings settings = new WorkflowSettings();
+        settings.setParameters( initParameters( params ) );
+        NextFlowRunner.runNextFlow( "1", "test", nextFlowScript, isWindows, settings, towerAddress, context, null );
     }
 
     private static void runAnna(boolean useDocker) throws Exception
@@ -66,7 +74,23 @@ public class TestNextflowRunner
         Path outputDir = Paths.get( OUTPUT_DIR );
         GeneSpaceContext context = new GeneSpaceContext( new File( PROJECT_DIR_ARGUMENT ).getParentFile().toPath(), new File( NEXTFLOW_PATH ).getParentFile().toPath(), null,
                 outputDir );
-        NextFlowRunner.runNextFlow( "158", "test", params, nextFlowScript, isWindows, useDocker, towerAddress, context, null );
+        WorkflowSettings settings = new WorkflowSettings();
+        settings.setParameters( initParameters( params ) );
+        NextFlowRunner.runNextFlow( "158", "test", nextFlowScript, isWindows, settings, towerAddress, context, null );
+    }
+
+    public static DynamicPropertySet initParameters(Map<String, Object> params)
+    {
+        DynamicPropertySet parameters = new DynamicPropertySetSupport();
+        for ( Entry<String, Object> param : params.entrySet() )
+        {
+            String name = param.getKey();
+            Object value = param.getValue();
+            Class clazz = String.class;
+            DynamicProperty dp = new DynamicProperty( name, clazz, value );
+            parameters.add( dp );
+        }
+        return parameters;
     }
 
 }

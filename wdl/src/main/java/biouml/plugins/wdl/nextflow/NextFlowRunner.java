@@ -26,6 +26,8 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.json.JSONObject;
+
 import biouml.model.Compartment;
 import biouml.model.Diagram;
 import biouml.plugins.wdl.GeneSpaceContext;
@@ -34,6 +36,7 @@ import biouml.plugins.wdl.WorkflowSettings;
 import biouml.plugins.wdl.WorkflowUtil;
 import one.util.streamex.StreamEx;
 import ru.biosoft.access.DataCollectionUtils;
+import ru.biosoft.access.FileImporter;
 import ru.biosoft.access.core.DataCollection;
 import ru.biosoft.access.core.DataElement;
 import ru.biosoft.access.core.DataElementPath;
@@ -53,7 +56,7 @@ public class NextFlowRunner
 		return result;
 	}
 	
-	public static String runNextFlowByDiagram(Diagram diagram, String nextFlowScript, WorkflowSettings settings, String outputDir, boolean useWsl, String jsonFile) throws Exception
+    public static String runNextFlowByDiagram(Diagram diagram, WorkflowSettings settings, String outputDir, boolean useWsl) throws Exception
     {
         if( settings.getOutputPath() == null )
             throw new InvalidParameterException( "Output path not specified" );
@@ -65,36 +68,41 @@ public class NextFlowRunner
         settings.exportCollections( outputDir );
         exportIncludes( diagram, outputDir );
 
-        if( nextFlowScript == null )
-            nextFlowScript = new NextFlowGenerator().generate( diagram );
+        NextFlowGenerator generator = new NextFlowGenerator();
+        generator.setNextflowSettings( settings.getNextflowSettings() );
+        String nextFlowScript = generator.generate( diagram );
         GeneSpaceContext context = new GeneSpaceContext( null, null, null, Paths.get( outputDir ) );
 
-        runNextFlow( diagram.getName(), diagram.getName(), Collections.emptyMap(), nextFlowScript, useWsl, settings.isUseDocker(), null, context, json.getName() );
+        runNextFlow( diagram.getName(), diagram.getName(), nextFlowScript, useWsl, settings, null, context, json.getName() );
+        //runNextFlow( diagram.getName(), diagram.getName(), Collections.emptyMap(), nextFlowScript, useWsl, settings.isUseDocker(), null, context, json.getName() );
         importResults( diagram, settings, outputDir );
         return "";
     }
 
-    public static void runNextFlow(String id, String name, Map<String, Object> parameters, String nextFlowScript,
-            boolean useWsl, boolean useDocker, String towerAddress, GeneSpaceContext context, String jsonFile) throws Exception
-	{
+    public static void runNextFlow(String id, String name, String nextFlowScript, boolean useWsl, WorkflowSettings settings, String towerAddress, GeneSpaceContext context,
+            String jsonFile) throws Exception
+    {
         File outputDir = context.getOutputDir().toFile();
         outputDir.mkdirs();
-        File config = generateConfig( name, parameters, outputDir, useDocker, context );
+        File config = generateConfig( name, outputDir, settings.getNextflowSettings() );
+        generateFunctions( context.getOutputDir().toString() );
 
-		File f = new File(outputDir, name + ".nf");
-		ApplicationUtils.writeString(f, nextFlowScript);
+        if( !name.endsWith( ".nf" ) )
+            name = name + ".nf";
+        File f = new File( outputDir, name );
+        ApplicationUtils.writeString( f, nextFlowScript );
 
         ProcessBuilder pb = null;
-        if( useDocker )
+        if( settings.isUseDocker() )
             pb = getNextflowDockerProcessBuilder( f.getName(), config.getName(), id, towerAddress, context, jsonFile );
         else
             pb = getNextflowLocalProcessBuilder( f.getName(), config.getName(), id, towerAddress, context, useWsl, jsonFile );
 
         log.log( Level.INFO, "COMMAND: " + StreamEx.of( pb.command() ).joining( " " ) );
-		System.out.println("COMMAND: " + StreamEx.of(pb.command()).joining(" "));
-		Process process = pb.start();
-		executeProcess(process);
-	}
+        System.out.println( "COMMAND: " + StreamEx.of( pb.command() ).joining( " " ) );
+        Process process = pb.start();
+        executeProcess( process );
+    }
 
     /*
      * Run nextflow as local process in Windows or Unix
@@ -115,7 +123,7 @@ public class NextFlowRunner
         if( towerAddress != null )
         {
             cmd.add( "-with-tower" );
-            cmd.add( "\'" + towerAddress + "\'" );
+            cmd.add( towerAddress );
         }
 
         if( jsonFile != null )
@@ -366,85 +374,74 @@ public class NextFlowRunner
 		return dest;
 	}
 
-    public static File generateConfig(String name, Map<String, Object> parameters, File outputDir, boolean useDocker, GeneSpaceContext context) throws Exception
-	{
-		File config = new File(outputDir, name + ".config");
-
-		try (BufferedWriter bw = new BufferedWriter(new FileWriter(config)))
-		{
-			bw.write("docker.enabled = true");
-			bw.write("\n");
-
-            //bw.write("workDir = '/tmp/nf-work'");
-			for( Entry<String, Object> e : parameters.entrySet() )
-			{
-
-				String value;
-				if ( e.getValue() instanceof String ) {
-					value = "\"" + e.getValue() + "\"";
-				} 
-				else if ( e.getValue() instanceof Path ) {
-                    value = "\"" + resolvePath( (Path) e.getValue(), context, useDocker ).toString() + "\"";
-				}
-				else
-				{
-					value = e.getValue().toString();
-				}
-                //value = ( e.getValue() instanceof String ) ? "\"" + e.getValue() + "\"" : e.getValue().toString();
-				bw.write("\n");
-				bw.write("params." + e.getKey() + " = " + value + "\n");
-			}
-			Path userHome = Paths.get( System.getProperty( "user.home" ) );
-            int uid = (int) Files.getAttribute( userHome, "unix:uid", LinkOption.NOFOLLOW_LINKS );
-            int gid = (int) Files.getAttribute( userHome, "unix:gid", LinkOption.NOFOLLOW_LINKS );
-            bw.write( "docker.runOptions = '--user " + uid + ":" + gid + "'\n" );
-            bw.write( "process.containerOptions = ''\n" );
-            bw.write( "process {\nstageInMode = 'symlink'\n"
-                    + "publishDir {\n"
-                    + "enabled = true\n"
-                    + "mode = 'link'\n"
-                    + "overwrite = true\n"
-                    + "}\n}\n" );
-		}
-		return config;
-	}
-
-    private static Path resolvePath(Path original, GeneSpaceContext context, boolean useDocker)
+    public static File generateConfig(String name, File outputDir, NextflowSettings settings) throws Exception
     {
-        return Path.of( "/" ).resolve( original );
+        File config = new File( outputDir, name + ".config" );
+
+        try (BufferedWriter bw = new BufferedWriter( new FileWriter( config ) ))
+        {
+            bw.write( "docker.enabled = true" );
+            bw.write( "\n" );
+
+            boolean isWindows = System.getProperty( "os.name" ).startsWith( "Windows" );
+
+            if( settings.isRoot() )
+            {
+                bw.write( "process.containerOptions = '--user root'" );
+                bw.write( "\n" );
+            }
+            else if( !isWindows )
+            {
+                //TODO: this should be optional, add some flag like 'run as current user' to parameters bean
+                //If flag is true, docker.runOptions = '--user <uid>:<gid>' shoud be set
+                //otherwise - run as root, remove docker.runOptions = '--user..' and add process.containerOptions = '--user root'
+                Path userHome = Paths.get( System.getProperty( "user.home" ) );
+                int uid = (int) Files.getAttribute( userHome, "unix:uid", LinkOption.NOFOLLOW_LINKS );
+                int gid = (int) Files.getAttribute( userHome, "unix:gid", LinkOption.NOFOLLOW_LINKS );
+                bw.write( "docker.runOptions = '--user " + uid + ":" + gid + "'" );
+                bw.write( "\n" );
+                bw.write( "process.containerOptions = ''" );
+                bw.write( "\n" );
+            }
+
+            bw.write( "process {\n" + "    stageInMode = '" + settings.getStageInput() + "'\n" + "}\n" );
+        }
+        return config;
     }
 
-	public static void importResults(Diagram diagram, WorkflowSettings settings, String outputDir) throws Exception
-	{
-		if( settings.getOutputPath() == null )
-			return;
-		DataCollection dc = settings.getOutputPath().getDataCollection();
+    public static void importResults(Diagram diagram, WorkflowSettings settings, String outputDir) throws Exception//TOO: move outputDIr to settings
+    {
+        DataCollection dc = settings.getOutputPath().getDataCollection();
+        File outputsFile = new File( outputDir, "outputs.json" );
+        String outputJson = ApplicationUtils.readAsString( outputsFile );
+        JSONObject jsonObj = new JSONObject( outputJson );
 
-		for( Compartment n : WorkflowUtil.getAllCalls(diagram) )
-		{
-			if( WorkflowUtil.getDiagramRef(n) != null )
-			{
-				String ref = WorkflowUtil.getDiagramRef(n);
-				Diagram externalDiagram = (Diagram)diagram.getOrigin().get(ref);
-				importResults(externalDiagram, settings, outputDir);
-				continue;
-			}
-			String taskRef = WorkflowUtil.getTaskRef(n);
-			String folderName = ( taskRef );
-			File folder = new File(outputDir, folderName);
-			if( !folder.exists() || !folder.isDirectory() )
-			{
-				log.info("No results for " + n.getName());
-				continue;
-			}
-			DataCollection nested = DataCollectionUtils.createSubCollection(dc.getCompletePath().getChildPath(folderName));
-			for( File f : folder.listFiles() )
-			{
-				String data = ApplicationUtils.readAsString(f);
-				nested.put(new TextDataElement(f.getName(), nested, data));
-			}
-		}
-	}
+        for ( String outputName : jsonObj.keySet() )
+        {
+            JSONObject element = (JSONObject) jsonObj.get( outputName );
+            if( outputName.contains( "." ) )
+                outputName = outputName.substring( outputName.lastIndexOf( "." ) + 1 );
+            String type = element.get( "type" ).toString();
+            if( type.equals( "File" ) || type.equals( "File?" ) )
+            {
+                String path = element.get( "value" ).toString();
+                DataCollection subCollection = null;
+                if( dc.contains( outputName ) )
+                {
+                    subCollection = (DataCollection) dc.get( outputName );
+                }
+                else
+                {
+                    subCollection = DataCollectionUtils.createSubCollection( dc.getCompletePath().getChildPath( outputName ) );
+                }
+                new FileImporter().doImport( subCollection, new File( path ), outputName, null, log );
+            }
+            else if( type.equals( "Array[File]" ) || type.equals( "Array[File]?" ) )
+            {
+
+            }
+        }
+    }
 
 	public static void exportIncludes(Diagram diagram, String outputDir) throws Exception
 	{
