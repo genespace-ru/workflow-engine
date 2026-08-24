@@ -405,6 +405,11 @@ public class NextFlowRunner
             }
 
             bw.write( "process {\n" + "    stageInMode = '" + settings.getStageInput() + "'\n" + "}\n" );
+
+            if( settings.getPublishDir() != null )
+            {
+                bw.write( "process.publishDir=" + settings.getPublishDir() + "\n" );
+            }
         }
         return config;
     }
