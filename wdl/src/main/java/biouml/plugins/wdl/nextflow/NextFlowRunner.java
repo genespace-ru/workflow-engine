@@ -82,6 +82,12 @@ public class NextFlowRunner
     public static void runNextFlow(String id, String name, String nextFlowScript, boolean useWsl, WorkflowSettings settings, String towerAddress, GeneSpaceContext context,
             String jsonFile) throws Exception
     {
+        runNextFlow( id, name, nextFlowScript, useWsl, settings, towerAddress, context, jsonFile, false );
+    }
+
+    public static void runNextFlow(String id, String name, String nextFlowScript, boolean useWsl, WorkflowSettings settings, String towerAddress, GeneSpaceContext context,
+            String jsonFile, boolean isAsync) throws Exception
+    {
         File outputDir = context.getOutputDir().toFile();
         outputDir.mkdirs();
         File config = generateConfig( name, outputDir, settings.getNextflowSettings() );
@@ -99,9 +105,9 @@ public class NextFlowRunner
             pb = getNextflowLocalProcessBuilder( f.getName(), config.getName(), id, towerAddress, context, useWsl, jsonFile );
 
         log.log( Level.INFO, "COMMAND: " + StreamEx.of( pb.command() ).joining( " " ) );
-        System.out.println( "COMMAND: " + StreamEx.of( pb.command() ).joining( " " ) );
+        //System.out.println( "COMMAND: " + StreamEx.of( pb.command() ).joining( " " ) );
         Process process = pb.start();
-        executeProcess( process );
+        executeProcess( process, isAsync );
     }
 
     /*
@@ -282,12 +288,13 @@ public class NextFlowRunner
 		return host.toAbsolutePath().toString().replace("\\", "/") + ":" + container;
 	}
 
-	public static void executeProcess(Process process) throws Exception
+    public static void executeProcess(Process process, boolean isAsync) throws Exception
 	{
 		CommandRunner r = new CommandRunner(process);
 		Thread thread = new Thread(r);
 		thread.start();
-		process.waitFor();
+        if( !isAsync )
+            process.waitFor();
 	}
 
 	private static class CommandRunner implements Runnable
