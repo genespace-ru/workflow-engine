@@ -275,7 +275,7 @@ public class NextFlowRunner
         if( jsonFile != null )
         {
             cmd.add( "-params-file" );
-            cmd.add( workDir + "/" + jsonFile );
+            cmd.add( jsonFile );
         }
 
 		ProcessBuilder pb = new ProcessBuilder(cmd);
