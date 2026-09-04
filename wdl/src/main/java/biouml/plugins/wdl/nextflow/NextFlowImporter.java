@@ -933,4 +933,11 @@ public class NextFlowImporter
         }
         return result;
     }
+
+    public Set<String> getParams(String nextflow)
+    {
+        nextflow = nextflow.replace( "\\\r\n", "\r\n" );
+        List<ASTNode> nodes = NextflowParser.parse( nextflow, false, CompilePhase.SEMANTIC_ANALYSIS );
+        return getParams( nodes );
+    }
 }

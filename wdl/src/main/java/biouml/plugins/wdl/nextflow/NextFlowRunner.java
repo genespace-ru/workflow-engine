@@ -415,7 +415,7 @@ public class NextFlowRunner
 
             if( settings.getPublishDir() != null )
             {
-                bw.write( "process.publishDir=" + settings.getPublishDir() + "\n" );
+                bw.write( "process.publishDir='" + settings.getPublishDir() + "'\n" );
             }
         }
         return config;
