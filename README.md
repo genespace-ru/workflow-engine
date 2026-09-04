@@ -8,6 +8,13 @@ Build workflow-engine
 ```sh
 mvn package -DskipTests
 ```
+#Important note
+For Maven Central upload use only
+
+```sh
+mvn deploy -pl diagram,wdl
+```
+
 
 # To Run
 
@@ -32,7 +39,7 @@ Use your browser to open it at http://localhost:9998/
 
 # To Run command line tool
 
-You will need java 21
+You will need java 21.
 
 To convert WDL to Nextflow:
 
