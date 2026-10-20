@@ -1,14 +1,18 @@
 package biouml.plugins.wdl;
 
 import java.io.File;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Queue;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -142,7 +146,7 @@ public class WorkflowUtil
     public static Compartment getParentCycle(Node c)
     {
         Compartment parent = c.getCompartment();
-        while( parent != null )
+        while( parent != null  && !(parent instanceof Diagram))
         {
             if( isCycle( parent ) )
                 return parent;
@@ -150,7 +154,26 @@ public class WorkflowUtil
         }
         return null;
     }
+    
+    /**
+     * @return all conditional parents for given node before first enclosing cycle
+     */
+    public static List<Compartment> getParentIfs(Node c)
+    {
+        List<Compartment> result = new ArrayList<>();
+        Compartment parent = c.getCompartment();
+        while( !isCycle ( parent  ) && !(parent instanceof Diagram))
+        {
+            if( isConditional( parent ) )
+                result.add( parent );
+            parent = parent.getCompartment();
+        }
+        return result;
+    }
 
+    /**
+     * @return all cycle parents for given node
+     */
     public static List<Compartment> getParentCycles(Node c)
     {
         List<Compartment> result = new ArrayList<>();
@@ -344,6 +367,10 @@ public class WorkflowUtil
     {
         if( args == null )
             return;
+        if (args.contains( null ))
+        {
+            System.out.println( "" );
+        }
         n.getAttributes()
                 .add( new DynamicProperty( WDLConstants.ARGUMENTS_ATTR, String[].class, StreamEx.of( args ).toArray( String[]::new ) ) );
     }
@@ -421,11 +448,22 @@ public class WorkflowUtil
     {
         return n.getAttributes().getValueAsString( WDLConstants.TYPE_ATTR );
     }
+    
+    public static String getDefaultValue(Node n)
+    {
+        if( n.getAttributes().hasProperty( WDLConstants.DEFAULT_VALUE_ATTR ) )
+            return n.getAttributes().getValueAsString( WDLConstants.DEFAULT_VALUE_ATTR );
+        return null;
+    }
+    public static void setDefaultValue(Node n, String value)
+    {
+        n.getAttributes().add( new DynamicProperty( WDLConstants.DEFAULT_VALUE_ATTR, String.class, value ) );
+    }
 
     public static String getCallName(Compartment n)
     {
         String alias = getAlias(n);
-        if( alias != null && !alias.isEmpty() )
+        if (alias != null && !alias.isEmpty())
             return alias;
         return getTaskRef(n);
     }
@@ -481,6 +519,15 @@ public class WorkflowUtil
         return result;
     }
 
+    public static String getQualifiedName(Node n)
+    {
+        if( isOutput( n ) && isCall( n.getCompartment() ) )
+        {
+            return getCallName( n.getCompartment() ) + "." + getName( n );
+        }
+        return getName(n);
+    }
+
     public static String getName(Node n)
     {
         try
@@ -510,6 +557,11 @@ public class WorkflowUtil
         n.getAttributes().add( new DynamicProperty( WDLConstants.NAME_ATTR, String.class, name ) );
     }
 
+    public static void setWDLVersion(Diagram diagram, String version)
+    {
+        diagram.getAttributes().add( new DynamicProperty( WDLConstants.WDL_VERSION_ATTR, String.class, version ) );
+    }
+    
     public static void setVersion(Diagram diagram, String version)
     {
         diagram.getAttributes().add( new DynamicProperty( WDLConstants.VERSION_ATTR, String.class, version ) );
@@ -610,44 +662,51 @@ public class WorkflowUtil
         return diagram.recursiveStream().select( Compartment.class ).filter( c -> isTask( c ) && c.getName().equals( taskName ) ).findAny()
                 .orElse( null );
     }
-
+    
+    public static Compartment findCallee(Compartment call)
+    {
+        return findCallee(call, null);
+    }
     /**
-     * Returns task corresponding to this call in diagram and other diagrams in BioUML repository (for now only in the same data collection) 
-     * Or if this call is a call of workflow - return this workflow 
+     * Returns task corresponding to this call in diagram and other diagrams in BioUML repository (for now only in the same data collection)
+     * Or if this call is a call of workflow - return this workflow
      * TODO: maybe generalize if needed
-     * 
      * @param call
      * @param diagram
      * @return
      */
-    public static Compartment findCallee(Compartment call)
+    public static Compartment findCallee(Compartment call, Map<String, Diagram> diagrams)
     {
-        Diagram diagram = Diagram.getDiagram( call );
-        ;
+        Diagram diagram = Diagram.getDiagram( call );;
         String taskRef = getTaskRef( call );
         String ref = getDiagramRef( call );
-        if( ref != null && !(ref.isEmpty()) )
+        if (ref != null && !(ref.isEmpty()))
         {
-            DataCollection origin = diagram.getOrigin();
-            try
+            if( diagrams != null )
+                diagram = diagrams.get( ref );
+            else
             {
-                diagram = (Diagram) origin.get( ref );
-            }
-            catch (Exception ex)
-            {
-                return null;
+                DataCollection origin = diagram.getOrigin();
+                try
+                {
+                    diagram = (Diagram)origin.get( ref );
+                }
+                catch( Exception ex )
+                {
+                    return null;
+                }
             }
         }
-        Compartment c = findTask( taskRef, diagram );
-
-        if( c == null )
+        Compartment c = findTask(taskRef, diagram);
+        
+        if (c == null)
         {
             String mainWorkflow = getWorkflowName( diagram );
-            if( mainWorkflow.equals( taskRef ) )
+            if (mainWorkflow.equals( taskRef ))
             {
                 return diagram;
             }
-            for ( Compartment innerWorkflow : getWorkflows( diagram ) )
+            for( Compartment innerWorkflow : getWorkflows( diagram ) )
             {
                 if( innerWorkflow.getName().equals( taskRef ) )
                 {
@@ -736,6 +795,16 @@ public class WorkflowUtil
         return parent.stream( Node.class ).filter( n -> isInput( n ) && getName( n ).equals( name ) ).findAny().orElse( null );
     }
     
+    public static Node findExternalParameter(String name, Compartment parent)
+    {
+        return parent.stream( Node.class ).filter( n -> isExternalParameter( n ) && getName( n ).equals( name ) ).findAny().orElse( null );
+    }
+
+    public static Node findExternalOutput(String name, Compartment parent)
+    {
+        return parent.stream( Node.class ).filter( n -> isExternalOutput( n ) && getName( n ).equals( name ) ).findAny().orElse( null );
+    }
+    
     public static Node findOutput(String name, Compartment parent)
     {
         return parent.stream( Node.class ).filter( n -> isOutput( n ) && getName( n ).equals( name ) ).findAny().orElse( null );
@@ -790,6 +859,13 @@ public class WorkflowUtil
         return c.recursiveStream().select( Node.class )
                 .filter( n -> ( isExternalParameter( n ) || isExpression( n ) || isCycleVariable( n ) ) )
                 .filter( n -> name.equals( getName( n ) ) ).toSet();
+    }
+
+    public static Node findExpressionNode(Compartment c, String expression)
+    {
+        return c.recursiveStream().select( Node.class )
+                .filter( n -> isExpression( n ) && getExpression( n ) != null && getExpression( n ).equals( expression ) ).findAny()
+                .orElse( null );
     }
 
     public static <T> List<T> findChild(biouml.plugins.wdl.parser.Node node, Class<T> c)
@@ -850,19 +926,19 @@ public class WorkflowUtil
     {
         return node.edges().filter( e -> e.getOutput().equals( node ) ).map( e -> e.getInput() ).findAny().orElse( null );
     }
-
+    
     public static Node findCallOutputSource(Node node)
     {
-        return getSources( node ).filter( n -> isOutput( n ) && isCall( n.getCompartment() ) ).findAny().orElse( null );
+        return getSources( node ).filter( n->isOutput( n ) && isCall( n.getCompartment() )).findAny().orElse( null );
     }
-
+    
     public static String getCycleName(Compartment c)
     {
         Node cycleNode = getCycleNode( c );
         return cycleNode == null ? null : getName( cycleNode );
     }
 
-    public static List<Node> orderCallsScatters(Compartment compartment)
+    public static List<Node> orderCallsScatters_OLD(Compartment compartment)
     {
         List<Node> result = new ArrayList<>();
         Map<Node, Set<Node>> previousSteps = new HashMap<>();
@@ -885,8 +961,75 @@ public class WorkflowUtil
             }
             for( Node c : added )
                 previousSteps.remove( c );
+//            print(previousSteps);
         }
         return result;
+    }
+    
+    public static List<Node> orderCallsScatters(Compartment compartment)
+    {
+        Map<Node, Set<Node>> previousSteps = new LinkedHashMap<>();
+        Map<Node, List<Node>> nextSteps = new HashMap<>();
+        Map<Node, Integer> dependencyCount = new HashMap<>();
+
+        for( Node c : compartment.stream( Node.class ).filter( c -> isCall( c ) || isCycle( c ) || isExpression( c ) || isConditional( c )
+                || isExternalParameter( c ) || isCycleVariable( c ) || isCondition( c ) ) )
+        {
+            previousSteps.put( c, getPreviousSteps( c, compartment ) );
+        }
+
+        // Build reverse dependencies
+        for( Map.Entry<Node, Set<Node>> entry : previousSteps.entrySet() )
+        {
+            Node node = entry.getKey();
+
+            Set<Node> dependencies = new HashSet<>( entry.getValue() );
+            dependencies.retainAll( previousSteps.keySet() );
+
+            dependencyCount.put( node, dependencies.size() );
+
+            for( Node dependency : dependencies )
+            {
+                nextSteps.computeIfAbsent( dependency, k -> new ArrayList<>() ).add( node );
+            }
+        }
+
+        Queue<Node> ready = new ArrayDeque<>();
+
+        for( Node node : previousSteps.keySet() )
+        {
+            if( dependencyCount.get( node ) == 0 )
+                ready.add( node );
+        }
+
+        List<Node> result = new ArrayList<>( previousSteps.size() );
+
+        while( !ready.isEmpty() )
+        {
+            Node node = ready.poll();
+            result.add( node );
+
+            for( Node next : nextSteps.getOrDefault( node, Collections.emptyList() ) )
+            {
+                int remaining = dependencyCount.get( next ) - 1;
+                dependencyCount.put( next, remaining );
+
+                if( remaining == 0 )
+                    ready.add( next );
+            }
+        }
+
+        if( result.size() != previousSteps.size() )
+            throw new IllegalStateException( "Cyclic dependencies detected" );
+
+        return result;
+    }
+    public static void print(Map<Node, Set<Node>> prevs)
+    {
+        for (Entry<Node, Set<Node>> prev: prevs.entrySet())
+        {
+            System.out.println(  prev.getKey().getName() +"  "+ StreamEx.of(prev.getValue()).map( n->n.getName() ).joining(", "));
+        }
     }
 
     public static Set<Node> getPreviousSteps(Node n, Compartment threshold)
@@ -933,7 +1076,7 @@ public class WorkflowUtil
         return node;
     }
 
-    private static boolean isInside(Node node, Compartment c)
+    public static boolean isInside(Node node, Compartment c)
     {
         Compartment parent = node.getCompartment();
         while( true )
@@ -1019,8 +1162,8 @@ public class WorkflowUtil
             NextFlowGenerator generator = new NextFlowGenerator( false );
             String nextFlow = generator.generate( (Diagram)de );
             String name = de.getName();
-            if( !name.endsWith( ".nf " ) )
-                name = name + ".nf";
+            if (!name.endsWith( ".nf "))
+                name = name +".nf";
             File exported = new File( dir, name );
             ApplicationUtils.writeString( exported, nextFlow );
         }
@@ -1129,6 +1272,9 @@ public class WorkflowUtil
         return getSources( node ).anyMatch( n -> isCall( n.getCompartment() ) );
     }
 
+    /**
+     * @return true if node is inside given compartment (maybe sveral levels deep)
+     */
     public static boolean isInside(Compartment c, Node node)
     {
         Compartment parent = node.getCompartment();
@@ -1148,11 +1294,14 @@ public class WorkflowUtil
         WorkflowUtil.setRuntime( process, runTime );
     }
     
+    /**
+     * Returns true if workflow diagram have only task definitions
+     */
     public static boolean hasOnlyTasks(Diagram diagram)
     {
        return !diagram.stream(Node.class).anyMatch(n -> !isTask(n));
     }
-
+    
     public static String getWorkflowName(Compartment c)
     {
         if( c instanceof Diagram )
@@ -1162,5 +1311,34 @@ public class WorkflowUtil
                 return name;
         }
         return c.getName();
+    }
+    
+    /**
+     * Infer type of call result executed in cycles and conditional blocks
+     * i.e. if result type of call is TYPE 
+     * call(x) => TYPE
+     * then:
+     * - for (i in array) call(i) => Array[TYPE]
+     * - if ( condition ) call(x) => TYPE?
+     * - for ( i in array ) if (condition ) call(i) => Array[TYPE?]
+     * - if ( condition ) for ( i in array ) call(i) => Array[TYPE]?
+     * @param output
+     * @return
+     */
+    public static String inferType(Node output)
+    {
+        Compartment call = output.getCompartment();
+        String baseType = getType(output);
+        
+        Compartment parent = call.getCompartment();
+        while( ! ( parent instanceof Diagram ) )
+        {
+            if( isConditional( parent ) && !baseType.endsWith( "?" ))
+                baseType = baseType + "?";
+            else if( isCycle( parent ) )            
+                baseType = "Array[" + baseType + "]";
+            parent = parent.getCompartment();
+        }
+        return baseType;
     }
 }

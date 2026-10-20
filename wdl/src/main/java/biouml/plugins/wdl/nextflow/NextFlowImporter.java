@@ -24,7 +24,6 @@ import biouml.plugins.wdl.FileScriptLoader;
 import biouml.plugins.wdl.ScriptLoader;
 import biouml.plugins.wdl.diagram.DiagramGenerator;
 import biouml.plugins.wdl.diagram.WDLDiagramType;
-import biouml.plugins.wdl.diagram.WDLLayouter;
 import biouml.plugins.wdl.model.CallInfo;
 import biouml.plugins.wdl.model.CommandInfo;
 import biouml.plugins.wdl.model.ConditionalInfo;
@@ -98,7 +97,6 @@ public class NextFlowImporter
             importer.scriptLoader = new FileScriptLoader( ScriptLoader.NEXTFLOW_TYPE, new File( "C:/Users/Damag/nextflow_work/SNV" ) );
 
             Diagram diagram = importer.importNextflow( code );
-            new WDLLayouter().layout( diagram );
 
             BufferedImage image = DiagramImageGenerator.generateDiagramImage( diagram );
             ImageWriter writer = ImageIO.getImageWritersBySuffix( "png" ).next();
@@ -126,7 +124,7 @@ public class NextFlowImporter
     public Diagram importNextflow(String nextflow, Diagram diagram) throws Exception
     {
         parseNextflow( diagram.getName(), nextflow );
-        new DiagramGenerator().generateDiagram( scriptInfo, diagram );
+        new DiagramGenerator().generateDiagram( scriptInfo, diagram, null );
         return diagram;
     }
 
@@ -932,12 +930,5 @@ public class NextFlowImporter
             }
         }
         return result;
-    }
-
-    public Set<String> getParams(String nextflow)
-    {
-        nextflow = nextflow.replace( "\\\r\n", "\r\n" );
-        List<ASTNode> nodes = NextflowParser.parse( nextflow, false, CompilePhase.SEMANTIC_ANALYSIS );
-        return getParams( nodes );
     }
 }

@@ -27,7 +27,7 @@ public class CallProperties extends InitialElementPropertiesSupport
     protected String alias = "call_1";
     protected String taskRef = "";
     protected String[] availableTasks = new String[0];
-
+    
     public CallProperties(Diagram diagram)
     {
         availableTasks = StreamEx.of( WorkflowUtil.getTasks( diagram ) ).map( task -> task.getName() ).toArray( String[]::new );

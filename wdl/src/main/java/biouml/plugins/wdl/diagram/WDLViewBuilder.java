@@ -23,8 +23,6 @@ import biouml.model.Node;
 import biouml.model.graph.InOutFinder;
 import biouml.plugins.wdl.WorkflowUtil;
 import biouml.standard.type.DimensionEx;
-import ru.biosoft.access.core.DataCollectionConfigConstants;
-import ru.biosoft.access.core.DataElementPath;
 import ru.biosoft.access.repository.IconFactory;
 import ru.biosoft.graph.PortFinder;
 import ru.biosoft.graphics.ArrowView;
@@ -124,8 +122,6 @@ public class WDLViewBuilder extends DefaultDiagramViewBuilder
     public @Nonnull CompositeView createEdgeView(Edge edge, DiagramViewOptions viewOptions, Graphics g)
     {
         String type = edge.getKernel().getType();
-        //        if( WDLConstants.LINK_TYPE.equals( type ) )
-        //        {
         CompositeView view = new CompositeView();
         Pen pen = viewOptions.getConnectionPen();
         Brush brush = viewOptions.getConnectionBrush();
@@ -155,43 +151,6 @@ public class WDLViewBuilder extends DefaultDiagramViewBuilder
         view.setActive( false );
 
         return view;
-        //        }
-        //        return super.cre/ateEdgeView( edge, viewOptions, g );
-    }
-
-    protected boolean createInputView(CompositeView container, Node node, WDLViewOptions diagramOptions, Graphics g)
-    {
-        View text = new TextView( DataElementPath
-                .create( (String)node.getAttributes().getValue( DataCollectionConfigConstants.COMPLETE_NAME_PROPERTY ) ).getName(),
-                diagramOptions.getDefaultFont(), g );
-        int d = 3;
-
-        ImageView image = null;
-
-        try
-        {
-            DataElementPath imgPath = ru.biosoft.access.core.DataElementPath
-                    .create( (String)node.getAttributes().getValue( DataCollectionConfigConstants.COMPLETE_NAME_PROPERTY ) );
-            image = new ImageView( IconFactory.getIcon( imgPath ).getImage(), d, 0 );
-            image.setPath( IconFactory.getIconId( imgPath ) );
-        }
-        catch( Exception e )
-        {
-        }
-
-        Rectangle r = text.getBounds();
-
-        Brush nodeBrush = getBrush( node, diagramOptions.getDeBrush() );
-        BoxView view = new BoxView( diagramOptions.getNodePen(), nodeBrush, r.x - d, r.y - d,
-                r.width + d * 2 + ( image == null ? 0 : image.getBounds().width ), r.height + d * 2 );
-
-        view.setModel( node );
-        container.add( view );
-        if( image != null )
-            container.add( image, CompositeView.X_LL | CompositeView.Y_CC );
-        container.add( text, CompositeView.X_RR | CompositeView.Y_CC );
-        view.setActive( true );
-        return false;
     }
 
     protected boolean createStructView(CompositeView container, Node node, WDLViewOptions viewOptions, Graphics g)
@@ -201,7 +160,7 @@ public class WDLViewBuilder extends DefaultDiagramViewBuilder
         Rectangle textRect = text.getBounds();
         RectangularShape roundRect = new RoundRectangle2D.Float( 0, 0, textRect.width + 10, textRect.height + 10, 10, 10 );
         Brush nodeBrush = getBrush( node, viewOptions.getStructBrush() );
-        BoxView view = new BoxView( viewOptions.getAnalysisPen(), nodeBrush, roundRect );
+        BoxView view = new BoxView( viewOptions.getCallPen(), nodeBrush, roundRect );
         view.setLocation( node.getLocation() );
         view.setModel( node );
         container.add( view );
@@ -214,11 +173,11 @@ public class WDLViewBuilder extends DefaultDiagramViewBuilder
     {
         DimensionEx size = compartment.getShapeSize();
 
-        View text = new ComplexTextView( StringEscapeUtils.escapeHtml4( compartment.getTitle() ), viewOptions.getDefaultFont(),
+        View text = new ComplexTextView( StringEscapeUtils.escapeHtml4( compartment.getTitle() ), viewOptions.getCompartmentTitleFont(),
                 viewOptions.getFontRegistry(), ComplexTextView.TEXT_ALIGN_CENTER, 30, g );
-        RectangularShape roundRect = new RoundRectangle2D.Float( 0, 0, size.getWidth(), size.getHeight(), 5, 5 );
+        RectangularShape roundRect = new RoundRectangle2D.Float( 0, 0, size.getWidth(), size.getHeight(), 20, 20 );
         Brush nodeBrush = getBrush( compartment, viewOptions.getTaskBrush() );
-        BoxView view = new BoxView( viewOptions.getAnalysisPen(), nodeBrush, roundRect );
+        BoxView view = new BoxView( viewOptions.getTaskPen(), nodeBrush, roundRect );
         view.setLocation( compartment.getLocation() );
         view.setModel( compartment );
         container.add( view );
@@ -229,7 +188,7 @@ public class WDLViewBuilder extends DefaultDiagramViewBuilder
 
     protected boolean createWorkflowView(CompositeView container, Compartment compartment, WDLViewOptions viewOptions, Graphics g)
     {
-    	DimensionEx size = compartment.getShapeSize();
+        DimensionEx size = compartment.getShapeSize();
 
         View text = new ComplexTextView( StringEscapeUtils.escapeHtml4( compartment.getTitle() ), viewOptions.getCompartmentTitleFont(),
                 viewOptions.getFontRegistry(), ComplexTextView.TEXT_ALIGN_CENTER, 30, g );
@@ -255,7 +214,7 @@ public class WDLViewBuilder extends DefaultDiagramViewBuilder
                 viewOptions.getFontRegistry(), ComplexTextView.TEXT_ALIGN_CENTER, 30, g );
         RectangularShape roundRect = new RoundRectangle2D.Float( 0, 0, size.getWidth(), size.getHeight(), 20, 20 );
         Brush nodeBrush = getBrush( compartment, viewOptions.getCallBrush() );
-        BoxView view = new BoxView( viewOptions.getAnalysisPen(), nodeBrush, roundRect );
+        BoxView view = new BoxView( viewOptions.getCallPen(), nodeBrush, roundRect );
         view.setLocation( compartment.getLocation() );
         view.setModel( compartment );
         container.add( view );
@@ -337,9 +296,11 @@ public class WDLViewBuilder extends DefaultDiagramViewBuilder
         if( text == null || text.isEmpty() )
             text = WorkflowUtil.getExpression( node );
         View textView = new TextView( text, font, g );
-        Brush nodeBrush = getBrush( node, diagramOptions.getExpressionBrush() );
+        Brush brush = getBrush( node,
+                WorkflowUtil.isTask( node.getCompartment() ) ? new Brush(new Color(180, 180, 180)) : diagramOptions.getExpressionBrush() );
+        Pen pen = getBorderPen(node,  WorkflowUtil.isTask( node.getCompartment() ) ? diagramOptions.getTaskPen(): diagramOptions.getExpressionPen() );
         RectangularShape roundRect = new Rectangle2D.Float( 0, 0, textView.getBounds().width + 10, 20 );
-        BoxView view = new BoxView( diagramOptions.getExpressionPen(), nodeBrush, roundRect );
+        BoxView view = new BoxView( pen, brush, roundRect );
         view.setModel( node );
         view.setActive( true );
         container.add( view, CompositeView.X_CC | CompositeView.Y_CC );
@@ -365,7 +326,7 @@ public class WDLViewBuilder extends DefaultDiagramViewBuilder
     {
         ColorFont font = getTitleFont( node, diagramOptions.getExpressionFont() );
         String text = WorkflowUtil.getName( node );
-        if( text.isEmpty() )
+        if( text == null ||text.isEmpty() )
             text = WorkflowUtil.getExpression( node );
 
         View textView = new TextView( text, font, g );
@@ -480,7 +441,7 @@ public class WDLViewBuilder extends DefaultDiagramViewBuilder
 
     protected boolean createCycleVariableCoreView(CompositeView container, Node node, WDLViewOptions diagramOptions, Graphics g)
     {
-        String title = node.getName();
+        String title = node.getTitle();
         View text = new TextView( title, diagramOptions.getNodeTitleFont(), g );
         int d = 2;
         Rectangle r = text.getBounds();
@@ -527,7 +488,7 @@ public class WDLViewBuilder extends DefaultDiagramViewBuilder
             maxOutputWidth = Math.max(maxOutputWidth, getNodeBounds( node ).width);
         }
         
-        return textLength + maxInputWidth + maxOutputWidth + 20;
+        return textLength + Math.max( maxOutputWidth, maxInputWidth )*2+20;
     }
-
+   
 }

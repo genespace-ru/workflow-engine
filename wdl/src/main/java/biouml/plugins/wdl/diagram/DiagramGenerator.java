@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
+
 import java.util.logging.Logger;
 
 import com.developmentontheedge.beans.DynamicProperty;
@@ -51,7 +51,7 @@ public class DiagramGenerator
     private Map<String, Compartment> tasks = new HashMap<>();
     private Map<String, Compartment> workflows = new HashMap<>();
     private int externalPosition = 0;
-
+    private boolean doLayout = true;
     public Diagram generateDiagram(ScriptInfo script, DataCollection dc, String name) throws Exception
     {
         Diagram result = new WDLDiagramType().createDiagram( dc, name );
@@ -113,13 +113,19 @@ public class DiagramGenerator
         Util.movePortsToEdge( diagram );
         //        addOutputs( diagram );
  
-        new WDLLayouter().layout( diagram );
+        if( doLayout )
+            new WDLLayouter().layout( diagram );
 
         if( !WorkflowUtil.hasOnlyTasks(diagram) )
             diagram.recursiveStream().select(Node.class).filter(n -> WorkflowUtil.isTask(n)).forEach(n -> n.setVisible(false));
 
         this.allimports.put(diagram.getName(), diagram);
         return diagram;
+    }
+    
+    public void setDoLayout(boolean doLayout)
+    {
+        this.doLayout = doLayout;
     }
 
     private void createWorkflow(Diagram diagram, WorkflowInfo workflow, boolean topLevel) throws Exception
@@ -238,27 +244,26 @@ public class DiagramGenerator
     public static void addOutputs(Diagram diagram)
     {
         for( Node node : diagram.recursiveStream().select( Node.class )
-                .filter( n -> (  WorkflowUtil.isOutput( n ) && WorkflowUtil.isCall( n.getCompartment() ) ) ) )
+                .filter( n -> ( WorkflowUtil.isOutput( n ) && WorkflowUtil.isCall( n.getCompartment() ) ) ) )
         {
             boolean hasOutput = false;
-            for (Edge e: node.edges())
+            for( Edge e : node.edges() )
             {
-                if (WorkflowUtil.isExternalOutput(  e.getOtherEnd( node )))
-                        hasOutput = true;
+                if( WorkflowUtil.isExternalOutput( e.getOtherEnd( node ) ) )
+                    hasOutput = true;
             }
-            if (hasOutput)
+            if( hasOutput )
                 continue;
             if( ! ( WorkflowUtil.getEnclosingdWorkflow( node ) instanceof Diagram ) )
                 return;
-            String expression = WorkflowUtil.getCallName( node.getCompartment() ) +"."+ WorkflowUtil.getName( node );
+            String expression = WorkflowUtil.getCallName( node.getCompartment() ) + "." + WorkflowUtil.getName( node );
+            String resultName = WorkflowUtil.getResultName( node.getCompartment() );
+            String name = resultName != null ? resultName + "_" + WorkflowUtil.getName( node )
+                    : WorkflowUtil.getCallName( node.getCompartment() ) + "_" + WorkflowUtil.getName( node );
             ExpressionInfo expressionInfo = new ExpressionInfo();
-            if( expression == null )
-            {
-                System.out.println( "Error" );
-            }
             expressionInfo.setExpression( expression );
-            expressionInfo.setName( WorkflowUtil.getName( node ) );
-            expressionInfo.setType( null );
+            expressionInfo.setName( name );
+            expressionInfo.setType( WorkflowUtil.inferType( node ) );
             Node output = createOutputNode( diagram, expressionInfo );
             createLink( node, output );
         }
@@ -283,10 +288,14 @@ public class DiagramGenerator
     public void createImport(DataCollection dc, ImportInfo importInfo) throws Exception
     {
         DiagramGenerator generator = new DiagramGenerator();
+        generator.setDoLayout( this.doLayout );
         Diagram importedDiagram = generator.generateDiagram( importInfo.getImported(), dc, importInfo.getImported().getName() );
-        this.allimports.putAll(generator.getAllImports());
-        this.imports.put( importInfo.getAlias(), importedDiagram );
-        importedDiagram.getAttributes().add( new DynamicProperty( "SOURCE", String.class, importInfo.getSource() ) );
+        this.allimports.putAll( generator.getAllImports() );
+        if( importInfo.getAlias() != null )
+            this.imports.put( importInfo.getAlias(), importedDiagram );
+        else
+            this.imports.put( importedDiagram.getName(), importedDiagram );
+            importedDiagram.getAttributes().add( new DynamicProperty( "SOURCE", String.class, importInfo.getSource() ) );
         if( importInfo.getTask() != null )
         {
             DiagramElement de = importedDiagram.findDiagramElement( importInfo.getTask() );
@@ -374,14 +383,12 @@ public class DiagramGenerator
         return node;
     }
 
-    public Node createExpressionNode(Compartment parent, ExpressionInfo expressionInfo)
+    public static Node createExpressionNode(Compartment parent, ExpressionInfo expressionInfo)
     {
         String name = expressionInfo.getName();
-        boolean noName = name == "";
-        if( noName )
-        {
-            name = DefaultSemanticController.generateUniqueName( parent, "expression" );
-        }
+        if( name == null || name.isEmpty() )
+            name = "expression";
+        name = DefaultSemanticController.generateUniqueName( parent, name );
         Stub kernel = new Stub( null, name, WDLConstants.EXPRESSION_TYPE );
         Node node = new Node( parent, name, kernel );
         setDeclaration( node, expressionInfo );
@@ -396,7 +403,8 @@ public class DiagramGenerator
     {
         String name = expressionInfo.getName();
         if( name == null )
-            name = DefaultSemanticController.generateUniqueName( parent, "output" );
+            name = "output";
+        name = DefaultSemanticController.generateUniqueName( parent, name );
         Stub kernel = new Stub( null, name, WDLConstants.WORKFLOW_OUTPUT_TYPE );
         Node node = new Node( parent, name, kernel );
         setDeclaration( node, expressionInfo );
@@ -420,13 +428,11 @@ public class DiagramGenerator
         c.setNotificationEnabled( false );
         c.setShapeSize( new Dimension( 200, 0 ) );
         tasks.put( name, c );
-        int maxPorts = 0;
         int i = 0;
         for( ExpressionInfo expression : task.getInputs() )
         {
             Node portNode = addPort( WDLSemanticController.uniqName( parent, "input" ), WDLConstants.INPUT_TYPE, i++, c );
             setDeclaration( portNode, expression );
-            maxPorts = task.getInputs().size();
         }
 
         i = 0;
@@ -435,9 +441,10 @@ public class DiagramGenerator
             Node portNode = addPort( WDLSemanticController.uniqName( parent, "output" ), WDLConstants.OUTPUT_TYPE, i++, c );
             setDeclaration( portNode, expression );
         }
-        maxPorts = Math.max( maxPorts, task.getOutputs().size() );
-        int height = Math.max( 50, 24 * maxPorts + 8 );
-        c.setShapeSize( new Dimension( 200, height ) );
+        int maxPorts = Math.max(  task.getInputs().size(), task.getOutputs().size() );
+        int height = Math.max( 50, 20 * maxPorts + 5 * Math.max( maxPorts - 1, 0 ) + 20 );
+        int width = new WDLViewBuilder().calculateCallWidth( c , Diagram.getDiagram( parent ).getViewOptions());
+        c.setShapeSize( new Dimension( width, height ) );
         c.getAttributes().add( new DynamicProperty( "innerNodesPortFinder", Boolean.class, true ) );
         c.setNotificationEnabled( true );
         parent.put( c );
@@ -518,16 +525,16 @@ public class DiagramGenerator
         Compartment c = new Compartment( parent, name, kernel );
         c.setShapeSize( new Dimension( 500, 300 ) );
         String variable = scatter.getVariable();
-        String array = scatter.getExpression();
-        Set<String> arguments = scatter.getArguments();
-        Node arrayNode = Diagram.getDiagram( parent ).findNode( array.toString() );
+        ExpressionInfo info = scatter.getExpression();
 
+        Node arrayNode = WorkflowUtil.findExpressionNode( Diagram.getDiagram( parent ), info.getExpression() );
         if( arrayNode == null )
-            arrayNode = createExpression( array, "Array[Int]", parent );
+            arrayNode = createExpressionNode( parent, info );
+        WorkflowUtil.setName( arrayNode, arrayNode.getName() );
 
-        WorkflowUtil.setArguments( arrayNode, arguments );
-        Node variableNode = createNode( c, name, WDLConstants.SCATTER_VARIABLE_TYPE );
+        Node variableNode = createNode( c, variable, WDLConstants.SCATTER_VARIABLE_TYPE );
         WorkflowUtil.setName( variableNode, variable );
+        variableNode.setTitle( variable );
         c.put( variableNode );
         createLink( arrayNode, variableNode );
         parent.put( c );
@@ -551,17 +558,6 @@ public class DiagramGenerator
             }
         }
         return c;
-    }
-
-    private Node createExpression(String expression, String type, Compartment parent)
-    {
-        String name = DefaultSemanticController.generateUniqueName( parent, "expression" );
-        Node resultNode = createNode( parent, name, WDLConstants.EXPRESSION_TYPE );
-        WorkflowUtil.setExpression( resultNode, expression );
-        WorkflowUtil.setName( resultNode, name );
-        WorkflowUtil.setType( resultNode, type );
-        parent.put( resultNode );
-        return resultNode;
     }
 
     private static void setDeclaration(Node node, ExpressionInfo declaration)
@@ -644,6 +640,8 @@ public class DiagramGenerator
                 Node portNode = addPort( node.getName(), WDLConstants.INPUT_TYPE, WorkflowUtil.getPosition( node ), c );
                 WorkflowUtil.copyExpresion( portNode, node );
                 WorkflowUtil.setPosition( portNode, WorkflowUtil.getPosition( node ) );
+                if( WorkflowUtil.getExpression( node ) != null )
+                    WorkflowUtil.setDefaultValue( portNode, WorkflowUtil.getExpression( node ) );
                 inputs++;
             }
         }
@@ -654,12 +652,14 @@ public class DiagramGenerator
                 Node portNode = null;
                 if( WorkflowUtil.isOutput( node ) || WorkflowUtil.isExternalOutput( node ) )
                 {
-                    portNode = addPort( node.getName(), WDLConstants.OUTPUT_TYPE, WorkflowUtil.getPosition( node ), c );
+                    portNode = addPort( node.getName(), WDLConstants.OUTPUT_TYPE, WorkflowUtil.getPosition( node ), c );                 
                     outputs++;
                 }
                 else if( WorkflowUtil.isInput( node ) )
                 {
                     portNode = addPort( node.getName(), WDLConstants.INPUT_TYPE, WorkflowUtil.getPosition( node ), c );
+                    if( WorkflowUtil.getExpression( node ) != null )
+                        WorkflowUtil.setDefaultValue( portNode, WorkflowUtil.getExpression( node ) );
                     inputs++;
                 }
                 WorkflowUtil.setName( portNode, WorkflowUtil.getName( node ) );
@@ -691,8 +691,8 @@ public class DiagramGenerator
         }
 
         int maxPorts = Math.max( inputs, outputs );
-        int height = Math.max( 50, 24 * maxPorts + 16 );
-        int width = new WDLViewBuilder().calculateCallWidth( c , diagram.getViewOptions());
+        int height = Math.max( 50, 20 * maxPorts + 5 * Math.max( maxPorts - 1, 0 ) + 20 );
+        int width = new WDLViewBuilder().calculateCallWidth( c, diagram.getViewOptions());
         c.setShapeSize( new Dimension( width, height ) );
         c.getAttributes().add( new DynamicProperty( "innerNodesPortFinder", Boolean.class, true ) );
         String resultName = call.getResultName();
@@ -711,11 +711,14 @@ public class DiagramGenerator
         inNode.setFixed( true );
         Point parentLoc = parent.getLocation();
         DimensionEx parentDim = parent.getShapeSize();
+        int y = parentLoc.y + position * 20 + position * 5 + 10 ;
         if( WDLConstants.INPUT_TYPE.equals( nodeType ) )
-            inNode.setLocation( parentLoc.x + 2, parentLoc.y + position * 24 + 10 );
+        {
+            inNode.setLocation( parentLoc.x + 2, y );
+        }
         else
         {
-            inNode.setLocation( parentLoc.x + parentDim.getWidth() - 16 - 2, parentLoc.y + position * 24 + 10 );
+            inNode.setLocation( parentLoc.x + parentDim.getWidth() - 16 - 2, y  );
         }
         parent.put( inNode );
         return inNode;

@@ -11,7 +11,6 @@ import java.util.regex.Pattern;
 
 import ru.biosoft.util.ApplicationUtils;
 
-
 public class DummyParamsGenerator
 {
     public static void main(String[] args) throws IOException
