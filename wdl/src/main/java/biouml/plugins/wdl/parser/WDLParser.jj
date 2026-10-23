@@ -3059,14 +3059,13 @@ void expressionElement():
 {}
 {
       LOOKAHEAD(functionContainerElement()) functionContainerElement()
-    | LOOKAHEAD(subsymbolChain()) subsymbolChain()
+    | LOOKAHEAD( ( <SYMBOL> | <IN> | <VERSION> ) ( <DOT> | <SQUARE_BRACKET_L> ) ) accessExpression()
     | LOOKAHEAD(10) constructor()
     | LOOKAHEAD(10) expressionInBrackets()
     | text()
     | array()
     | map()
     | pair()
-    | LOOKAHEAD(5) containerElement()
     | LOOKAHEAD(5) function()
     | (/*@bgen(jjtree) None */
        {
@@ -3087,6 +3086,7 @@ void expressionElement():
     | regularFormulaElement()
     | ternary()
 }
+
 void expressionInBrackets()            :
 {/*@bgen(jjtree) Expression */
   AstExpression jjtn000 = new AstExpression(JJTEXPRESSION);
@@ -3166,84 +3166,90 @@ void expressionInBrackets()            :
     }
 /*@egen*/
 }
-void containerElement()                  :
-{/*@bgen(jjtree) ContainerElement */
-    AstContainerElement jjtn000 = new AstContainerElement(JJTCONTAINERELEMENT);
-    boolean jjtc000 = true;
-    jjtree.openNodeScope(jjtn000);
-    jjtn000.jjtSetFirstToken(getToken(1));
-/*@egen*/
-    String name;
-}
-{/*@bgen(jjtree) ContainerElement */
-    try {
-/*@egen*/
-    name = symbol()
-    {
-        jjtn000.setContainerName(name);
-    }
-    (
-        < SQUARE_BRACKET_L >
-        (sepEol())*
-        expression()
-        (sepEol())*
-        < SQUARE_BRACKET_R >
-    )+/*@bgen(jjtree)*/
-    } catch (Throwable jjte000) {
-      if (jjtc000) {
-        jjtree.clearNodeScope(jjtn000);
-        jjtc000 = false;
-      } else {
-        jjtree.popNode();
-      }
-      if (jjte000 instanceof RuntimeException) {
-        throw (RuntimeException)jjte000;
-      }
-      if (jjte000 instanceof ParseException) {
-        throw (ParseException)jjte000;
-      }
-      throw (Error)jjte000;
-    } finally {
-      if (jjtc000) {
-        jjtree.closeNodeScope(jjtn000, true);
-        jjtn000.jjtSetLastToken(getToken(0));
-      }
-    }
-/*@egen*/
-}
-void subsymbolChain()           :
-{/*@bgen(jjtree) SubSymbol */
-  AstSubSymbol jjtn000 = new AstSubSymbol(JJTSUBSYMBOL);
-  boolean jjtc000 = true;
-  jjtree.openNodeScope(jjtn000);
-  jjtn000.jjtSetFirstToken(getToken(1));
-/*@egen*/}
-{/*@bgen(jjtree) SubSymbol */
+// Build left-associative access expressions. Each dot creates AstSubSymbol
+// and each index creates AstContainerElement, wrapping the preceding result.
+// Examples:
+//   a.b          -> SubSymbol(Symbol(a), Symbol(b))
+//   a.b[i]       -> ContainerElement(SubSymbol(a,b), Expression(i))
+//   a[i].b[j]    -> ContainerElement(SubSymbol(ContainerElement(a,i),b),j)
+void accessExpression():
+{}
+{
+    symbol()
+    (/*@bgen(jjtree) #SubSymbol( 2) */
+        {
+          AstSubSymbol jjtn001 = new AstSubSymbol(JJTSUBSYMBOL);
+          boolean jjtc001 = true;
+          jjtree.openNodeScope(jjtn001);
+          jjtn001.jjtSetFirstToken(getToken(1));
+        }
         try {
 /*@egen*/
-	(LOOKAHEAD(5) containerElement() | symbol()) (< DOT > (LOOKAHEAD(5) containerElement() | symbol()))+/*@bgen(jjtree)*/
-        } catch (Throwable jjte000) {
-          if (jjtc000) {
-            jjtree.clearNodeScope(jjtn000);
-            jjtc000 = false;
+        (
+            < DOT >
+            symbol()
+        )/*@bgen(jjtree)*/
+        } catch (Throwable jjte001) {
+          if (jjtc001) {
+            jjtree.clearNodeScope(jjtn001);
+            jjtc001 = false;
           } else {
             jjtree.popNode();
           }
-          if (jjte000 instanceof RuntimeException) {
-            throw (RuntimeException)jjte000;
+          if (jjte001 instanceof RuntimeException) {
+            throw (RuntimeException)jjte001;
           }
-          if (jjte000 instanceof ParseException) {
-            throw (ParseException)jjte000;
+          if (jjte001 instanceof ParseException) {
+            throw (ParseException)jjte001;
           }
-          throw (Error)jjte000;
+          throw (Error)jjte001;
         } finally {
-          if (jjtc000) {
-            jjtree.closeNodeScope(jjtn000, true);
-            jjtn000.jjtSetLastToken(getToken(0));
+          if (jjtc001) {
+            jjtree.closeNodeScope(jjtn001,  2);
+            jjtn001.jjtSetLastToken(getToken(0));
           }
         }
+/*@egen*/              
+        |/*@bgen(jjtree) #ContainerElement( 2) */
+        {
+          AstContainerElement jjtn002 = new AstContainerElement(JJTCONTAINERELEMENT);
+          boolean jjtc002 = true;
+          jjtree.openNodeScope(jjtn002);
+          jjtn002.jjtSetFirstToken(getToken(1));
+        }
+        try {
 /*@egen*/
+        (
+            < SQUARE_BRACKET_L >
+            (sepEol())*
+            expression()
+            (sepEol())*
+            < SQUARE_BRACKET_R >
+        )/*@bgen(jjtree)*/
+        } catch (Throwable jjte002) {
+          if (jjtc002) {
+            jjtree.clearNodeScope(jjtn002);
+            jjtc002 = false;
+          } else {
+            jjtree.popNode();
+          }
+          if (jjte002 instanceof RuntimeException) {
+            throw (RuntimeException)jjte002;
+          }
+          if (jjte002 instanceof ParseException) {
+            throw (ParseException)jjte002;
+          }
+          throw (Error)jjte002;
+        } finally {
+          if (jjtc002) {
+            jjtree.closeNodeScope(jjtn002,  2);
+            jjtn002.jjtSetLastToken(getToken(0));
+          }
+        }
+/*@egen*/                     
+    )+
 }
+
 void constructor()             :
 {/*@bgen(jjtree) Constructor */
   AstConstructor jjtn000 = new AstConstructor(JJTCONSTRUCTOR);

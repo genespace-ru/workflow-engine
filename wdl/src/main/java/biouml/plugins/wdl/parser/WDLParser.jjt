@@ -832,19 +832,19 @@ void expressionElement():
 {}
 {
       LOOKAHEAD(functionContainerElement()) functionContainerElement()
-    | LOOKAHEAD(subsymbolChain()) subsymbolChain()
+    | LOOKAHEAD( ( <SYMBOL> | <IN> | <VERSION> ) ( <DOT> | <SQUARE_BRACKET_L> ) ) accessExpression()
     | LOOKAHEAD(10) constructor()
     | LOOKAHEAD(10) expressionInBrackets()
     | text()
     | array()
     | map()
     | pair()
-    | LOOKAHEAD(5) containerElement()
     | LOOKAHEAD(5) function()
     | (<NONE> #None)
     | regularFormulaElement()
     | ternary()
 }
+
 void expressionInBrackets() #Expression:
 {}
 {
@@ -854,28 +854,32 @@ void expressionInBrackets() #Expression:
     (sepEol())*
     (< BRAKET_R > {jjtThis.setElement(token.image);} #RegularFormulaElement)
 }
-void containerElement() #ContainerElement:
-{
-    String name;
-}
-{
-    name = symbol()
-    {
-        jjtThis.setContainerName(name);
-    }
-    (
-        < SQUARE_BRACKET_L >
-        (sepEol())*
-        expression()
-        (sepEol())*
-        < SQUARE_BRACKET_R >
-    )+
-}
-void subsymbolChain() #SubSymbol:
+// Build left-associative access expressions. Each dot creates AstSubSymbol
+// and each index creates AstContainerElement, wrapping the preceding result.
+// Examples:
+//   a.b          -> SubSymbol(Symbol(a), Symbol(b))
+//   a.b[i]       -> ContainerElement(SubSymbol(a,b), Expression(i))
+//   a[i].b[j]    -> ContainerElement(SubSymbol(ContainerElement(a,i),b),j)
+void accessExpression():
 {}
 {
-	(LOOKAHEAD(5) containerElement() | symbol()) (< DOT > (LOOKAHEAD(5) containerElement() | symbol()))+
+    symbol()
+    (
+        (
+            < DOT >
+            symbol()
+        ) #SubSymbol(2)
+        |
+        (
+            < SQUARE_BRACKET_L >
+            (sepEol())*
+            expression()
+            (sepEol())*
+            < SQUARE_BRACKET_R >
+        ) #ContainerElement(2)
+    )+
 }
+
 void constructor() #Constructor:
 {}
 {
