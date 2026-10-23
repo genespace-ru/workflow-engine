@@ -17,7 +17,6 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.developmentontheedge.application.ApplicationUtils;
 import com.developmentontheedge.beans.DynamicProperty;
 
 import biouml.model.Compartment;
@@ -39,6 +38,7 @@ import ru.biosoft.access.core.DataCollection;
 import ru.biosoft.access.core.DataElement;
 import ru.biosoft.access.core.TextDataElement;
 import ru.biosoft.access.generic.GenericDataCollection;
+import ru.biosoft.util.ApplicationUtils;
 
 public class WorkflowUtil
 {
