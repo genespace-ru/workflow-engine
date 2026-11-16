@@ -17,7 +17,6 @@ public class NextflowSettings
     private String stageInput = SYMLINK;
     private String publishOutput = LINK;
     private boolean root = true;
-    private String publishDir = null;
     
     @PropertyName ( "Publish output mode")
     public String getPublishOutput()
@@ -47,16 +46,5 @@ public class NextflowSettings
     public void setRoot(boolean asRoot)
     {
         this.root = asRoot;
-    }
-
-    @PropertyName("Publish dir")
-    public String getPublishDir()
-    {
-        return publishDir;
-    }
-
-    public void setPublishDir(String publishDir)
-    {
-        this.publishDir = publishDir;
     }
 }

@@ -15,7 +15,6 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -26,9 +25,10 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
+import org.json.JSONTokener;
 
-import biouml.model.Compartment;
 import biouml.model.Diagram;
 import biouml.plugins.wdl.GeneSpaceContext;
 import biouml.plugins.wdl.ImportProperties;
@@ -40,22 +40,21 @@ import ru.biosoft.access.FileImporter;
 import ru.biosoft.access.core.DataCollection;
 import ru.biosoft.access.core.DataElement;
 import ru.biosoft.access.core.DataElementPath;
-import ru.biosoft.access.core.TextDataElement;
 import ru.biosoft.util.ApplicationUtils;
 
 public class NextFlowRunner
 {
-    private static final String BIOUML_FUNCTIONS_NF = "resources/genespace_function.nf";
+	private static final String BIOUML_FUNCTIONS_NF = "resources/biouml_function.nf";
 	private static final Logger log = Logger.getLogger(NextFlowRunner.class.getName());
 
-	public static File generateFunctions(String outputDir) throws IOException
+    public static File generateFunctions(String outputDir) throws IOException
 	{
 		InputStream inputStream = NextFlowRunner.class.getResourceAsStream(BIOUML_FUNCTIONS_NF);
-        File result = new File( outputDir, "genespace_function.nf" );
+		File result = new File(outputDir, "biouml_function.nf");
 		Files.copy(inputStream, result.toPath(), StandardCopyOption.REPLACE_EXISTING);
 		return result;
 	}
-	
+
     public static String runNextFlowByDiagram(Diagram diagram, WorkflowSettings settings, String outputDir, boolean useWsl) throws Exception
     {
         if( settings.getOutputPath() == null )
@@ -74,7 +73,6 @@ public class NextFlowRunner
         GeneSpaceContext context = new GeneSpaceContext( null, null, null, Paths.get( outputDir ) );
 
         runNextFlow( diagram.getName(), diagram.getName(), nextFlowScript, useWsl, settings, null, context, json.getName() );
-        //runNextFlow( diagram.getName(), diagram.getName(), Collections.emptyMap(), nextFlowScript, useWsl, settings.isUseDocker(), null, context, json.getName() );
         importResults( diagram, settings, outputDir );
         return "";
     }
@@ -90,13 +88,13 @@ public class NextFlowRunner
     {
         File outputDir = context.getOutputDir().toFile();
         outputDir.mkdirs();
-        File config = generateConfig( name, outputDir, settings.getNextflowSettings() );
+        File config = generateConfig( name, outputDir, settings.getNextflowSettings());
         generateFunctions( context.getOutputDir().toString() );
 
         if( !name.endsWith( ".nf" ) )
             name = name + ".nf";
         File f = new File( outputDir, name );
-        ApplicationUtils.writeString( f, nextFlowScript );
+		ApplicationUtils.writeString(f, nextFlowScript);
 
         ProcessBuilder pb = null;
         if( settings.isUseDocker() )
@@ -105,10 +103,10 @@ public class NextFlowRunner
             pb = getNextflowLocalProcessBuilder( f.getName(), config.getName(), id, towerAddress, context, useWsl, jsonFile );
 
         log.log( Level.INFO, "COMMAND: " + StreamEx.of( pb.command() ).joining( " " ) );
-        //System.out.println( "COMMAND: " + StreamEx.of( pb.command() ).joining( " " ) );
-        Process process = pb.start();
+		System.out.println("COMMAND: " + StreamEx.of(pb.command()).joining(" "));
+		Process process = pb.start();
         executeProcess( process, isAsync );
-    }
+	}
 
     /*
      * Run nextflow as local process in Windows or Unix
@@ -129,7 +127,7 @@ public class NextFlowRunner
         if( towerAddress != null )
         {
             cmd.add( "-with-tower" );
-            cmd.add( towerAddress );
+            cmd.add( "\'" + towerAddress + "\'" );
         }
 
         if( jsonFile != null )
@@ -157,6 +155,7 @@ public class NextFlowRunner
         if( !useWsl )
             pb.directory( context.getOutputDir().toFile() );
         return pb;
+
     }
 
     private static List<String> getRunNextflowCommandsLocal(Path runDir, boolean useWsl)
@@ -229,7 +228,6 @@ public class NextFlowRunner
             cmd.add( "TOWER_WORKFLOW_ID=" + id );
             cmd.add( "-e" );
             cmd.add( "TOWER_ACCESS_TOKEN=zzz" );
-
         }
 
         cmd.add( "-v" );
@@ -275,7 +273,7 @@ public class NextFlowRunner
         if( jsonFile != null )
         {
             cmd.add( "-params-file" );
-            cmd.add( jsonFile );
+            cmd.add( workDir + "/" + jsonFile );
         }
 
 		ProcessBuilder pb = new ProcessBuilder(cmd);
@@ -382,57 +380,54 @@ public class NextFlowRunner
 	}
 
     public static File generateConfig(String name, File outputDir, NextflowSettings settings) throws Exception
-    {
-        File config = new File( outputDir, name + ".config" );
+	{
+		File config = new File(outputDir, name + ".config");
 
-        try (BufferedWriter bw = new BufferedWriter( new FileWriter( config ) ))
-        {
-            bw.write( "docker.enabled = true" );
-            bw.write( "\n" );
-
-            boolean isWindows = System.getProperty( "os.name" ).startsWith( "Windows" );
-
-            if( settings.isRoot() )
+		try (BufferedWriter bw = new BufferedWriter(new FileWriter(config)))
+		{
+			bw.write("docker.enabled = true");
+			bw.write("\n");
+          
+	        boolean isWindows = System.getProperty( "os.name" ).startsWith( "Windows" );
+	        
+	        if (settings.isRoot())
+	        {
+	            bw.write( "process.containerOptions = '--user root'");
+	            bw.write("\n");
+	        }
+	        else if( !isWindows )
             {
-                bw.write( "process.containerOptions = '--user root'" );
-                bw.write( "\n" );
-            }
-            else if( !isWindows )
-            {
-                //TODO: this should be optional, add some flag like 'run as current user' to parameters bean
-                //If flag is true, docker.runOptions = '--user <uid>:<gid>' shoud be set
-                //otherwise - run as root, remove docker.runOptions = '--user..' and add process.containerOptions = '--user root'
+	            //TODO: this should be optional, add some flag like 'run as current user' to parameters bean
+	            //If flag is true, docker.runOptions = '--user <uid>:<gid>' shoud be set
+	            //otherwise - run as root, remove docker.runOptions = '--user..' and add process.containerOptions = '--user root'
                 Path userHome = Paths.get( System.getProperty( "user.home" ) );
-                int uid = (int) Files.getAttribute( userHome, "unix:uid", LinkOption.NOFOLLOW_LINKS );
-                int gid = (int) Files.getAttribute( userHome, "unix:gid", LinkOption.NOFOLLOW_LINKS );
+                int uid = (int)Files.getAttribute( userHome, "unix:uid", LinkOption.NOFOLLOW_LINKS );
+                int gid = (int)Files.getAttribute( userHome, "unix:gid", LinkOption.NOFOLLOW_LINKS );
                 bw.write( "docker.runOptions = '--user " + uid + ":" + gid + "'" );
-                bw.write( "\n" );
+                bw.write("\n");
                 bw.write( "process.containerOptions = ''" );
-                bw.write( "\n" );
+                bw.write("\n");
             }
+            
+            bw.write( "process {\n"
+                    + "    stageInMode = '"+settings.getStageInput()+"'\n"
+                    + "}\n" );          
+		}
+		return config;
+	}
 
-            bw.write( "process {\n" + "    stageInMode = '" + settings.getStageInput() + "'\n" + "}\n" );
-
-            if( settings.getPublishDir() != null )
-            {
-                bw.write( "process.publishDir='" + settings.getPublishDir() + "'\n" );
-            }
-        }
-        return config;
-    }
-
-    public static void importResults(Diagram diagram, WorkflowSettings settings, String outputDir) throws Exception//TOO: move outputDIr to settings
-    {
-        DataCollection dc = settings.getOutputPath().getDataCollection();
-        File outputsFile = new File( outputDir, "outputs.json" );
+	public static void importResults(Diagram diagram, WorkflowSettings settings, String outputDir) throws Exception//TOO: move outputDIr to settings
+	{
+	    DataCollection dc = settings.getOutputPath().getDataCollection();
+	    File outputsFile = new File(outputDir, "outputs.json");
         String outputJson = ApplicationUtils.readAsString( outputsFile );
         JSONObject jsonObj = new JSONObject( outputJson );
 
-        for ( String outputName : jsonObj.keySet() )
+        for( String outputName : jsonObj.keySet() )
         {
-            JSONObject element = (JSONObject) jsonObj.get( outputName );
-            if( outputName.contains( "." ) )
-                outputName = outputName.substring( outputName.lastIndexOf( "." ) + 1 );
+            JSONObject element = (JSONObject)jsonObj.get( outputName );
+            if (outputName.contains( "." ))
+                outputName = outputName.substring( outputName.lastIndexOf( "." ) +1);
             String type = element.get( "type" ).toString();
             if( type.equals( "File" ) || type.equals( "File?" ) )
             {
@@ -440,20 +435,20 @@ public class NextFlowRunner
                 DataCollection subCollection = null;
                 if( dc.contains( outputName ) )
                 {
-                    subCollection = (DataCollection) dc.get( outputName );
+                    subCollection = (DataCollection)dc.get( outputName );
                 }
                 else
                 {
                     subCollection = DataCollectionUtils.createSubCollection( dc.getCompletePath().getChildPath( outputName ) );
                 }
-                new FileImporter().doImport( subCollection, new File( path ), outputName, null, log );
+                new FileImporter().doImport( subCollection, new File(path), outputName, null, log );
             }
-            else if( type.equals( "Array[File]" ) || type.equals( "Array[File]?" ) )
+            else if (type.equals( "Array[File]" ) || type.equals( "Array[File]?" ))
             {
-
+                
             }
         }
-    }
+	}
 
 	public static void exportIncludes(Diagram diagram, String outputDir) throws Exception
 	{
@@ -494,12 +489,11 @@ public class NextFlowRunner
     {
         File runDir = content.getParentFile();
 
-        List<String> commands = new ArrayList<>();
-        String containerId = id.replaceAll( "[^a-zA-Z]+", "" );
+        List<String> commands;
         if( useDocker )
-            commands.addAll( getRunNextflowCommandsDocker( runDir.toPath(), containerId ) );
+            commands = getRunNextflowCommandsDocker( runDir.toPath(), id );
         else
-            commands.addAll( getRunNextflowCommandsLocal( runDir.toPath(), useWsl ) );
+            commands = getRunNextflowCommandsLocal( runDir.toPath(), useWsl );
 
         commands.add( "config" );
         commands.add( "-properties" );

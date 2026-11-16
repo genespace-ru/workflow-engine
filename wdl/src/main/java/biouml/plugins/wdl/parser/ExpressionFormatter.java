@@ -1,7 +1,7 @@
 package biouml.plugins.wdl.parser;
 
 import java.util.Map;
-import java.util.Map.Entry;
+import java.util.regex.Pattern;
 
 import one.util.streamex.StreamEx;
 
@@ -80,19 +80,26 @@ public class ExpressionFormatter
     protected void processText(AstText node)
     {
         String content = node.toString();
-        boolean hasQuote = content.contains( "\"" );
-        result.append( hasQuote? "\'": "\"" );
-        result.append( content );
-        result.append( hasQuote? "\'": "\"" );
+//        boolean hasQuote = content.contains( "\"" );
+//        result.append( hasQuote? "\'": "\"" );
+//        result.append( content );
+//        result.append( hasQuote? "\'": "\"" );
+        boolean hasQuote = Pattern.compile("(?<!\\\\)\"").matcher(content).find();
+
+        result.append(hasQuote ? "'" : "\"");
+        result.append(content);
+        result.append(hasQuote ? "'" : "\"");
     }
 
     protected void processContainer(AstContainerElement node)
     {
-        result.append( node.toString() );
-        result.append( "[" );
-        for( Node child : node.children )
-            processNode( child );
-        result.append( "]" );
+        processNode( node.children[0] );
+        for( int i = 1; i < node.children.length; i++ )
+        {
+            result.append( "[" );
+            processNode( node.children[i] );
+            result.append( "]" );
+        }
     }
 
     protected void processFunction(AstFunction node)
@@ -105,7 +112,7 @@ public class ExpressionFormatter
     private void processMap(AstMap astMap)
     {
         result.append( "{ " );
-        Map<String, Object> map = astMap.toMap();
+        Map<String, SimpleNode> map = astMap.toMap();
         result.append( StreamEx.of( map.entrySet() ).map( e -> e.getKey() + ": " + e.getValue() ).joining( ", " ) );
         result.append( " }" );
     }

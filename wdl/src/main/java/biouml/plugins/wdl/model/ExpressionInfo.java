@@ -3,7 +3,6 @@ package biouml.plugins.wdl.model;
 import java.util.HashSet;
 import java.util.Set;
 
-import biouml.plugins.wdl.parser.AstDeclaration;
 import biouml.plugins.wdl.parser.AstExpression;
 import biouml.plugins.wdl.parser.ExpressionParser;
 import biouml.plugins.wdl.parser.ParseException;
@@ -57,7 +56,7 @@ public class ExpressionInfo implements Cloneable
     public void setExpression(String expression)
     {
         this.expression = expression;
-        if( expression != null )
+        if( expression != null && !expression.isEmpty())
         {
             try
             {
@@ -66,6 +65,7 @@ public class ExpressionInfo implements Cloneable
             }
             catch (ParseException e)
             {
+                setAST(null);
             }
         }
     }
@@ -107,5 +107,10 @@ public class ExpressionInfo implements Cloneable
             ex.printStackTrace();
         }
         return result;
+    }
+    
+    public String toString()
+    {
+        return getType() +" " +getName() + " = " +getExpression();
     }
 }

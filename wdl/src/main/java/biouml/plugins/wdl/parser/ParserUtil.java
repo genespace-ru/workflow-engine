@@ -2,6 +2,20 @@ package biouml.plugins.wdl.parser;
 
 public class ParserUtil
 {
+    public static int findIndex(Node parent, Node child)
+    {
+        for( int i = 0; i < parent.jjtGetNumChildren(); i++ )
+        {
+            Node nextChild = parent.jjtGetChild( i );
+            if( child == nextChild )
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    
     public static void replaceChild(SimpleNode parent, int index, Node newChild)
     {
         if( newChild == null )
@@ -60,5 +74,13 @@ public class ParserUtil
         }
 
         throw new IllegalArgumentException( "The specified node is not a child of the given parent" );
+    }
+    
+    public static biouml.plugins.wdl.parser.Node hasOneArgument(AstFunction func)
+    {
+        biouml.plugins.wdl.parser.Node[] children = func.getChildren();
+        if( children.length == 3 && children[1] instanceof AstExpression && children[1].jjtGetNumChildren() == 1 )
+            return children[1].jjtGetChild( 0 );
+        return null;
     }
 }

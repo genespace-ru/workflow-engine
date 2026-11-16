@@ -20,6 +20,7 @@ import biouml.standard.type.Base;
 import biouml.standard.type.Stub;
 import ru.biosoft.exception.ExceptionRegistry;
 import ru.biosoft.graphics.editor.ViewEditorPane;
+import ru.biosoft.util.ApplicationUtils;
 
 /**
  * Semantic controller for workflow diagrams
@@ -41,9 +42,9 @@ public class WDLSemanticController extends DefaultSemanticController
                 Object properties = getPropertiesByType( parent, type, pt );
                 if( properties instanceof InitialElementProperties )
                 {
-                    //                    PropertiesDialog dialog = new PropertiesDialog( Application.getApplicationFrame(), "New element", properties );
-                    //                    if( dialog.doModal() )
-                    ((InitialElementProperties) properties).createElements( parent, pt, viewEditor );
+//                    PropertiesDialog dialog = new PropertiesDialog( Application.getApplicationFrame(), "New element", properties );
+//                    if( dialog.doModal() )
+//                         ( (InitialElementProperties)properties ).createElements( parent, pt, viewEditor );
                     return DiagramElementGroup.EMPTY_EG;
                 }
             }
@@ -116,7 +117,15 @@ public class WDLSemanticController extends DefaultSemanticController
         if( input )
             p.x = parent.getLocation().x;
         else
+        {
+            if (parent.getView() == null || node.getView() == null)
+            {
+                Diagram diagram = Diagram.getDiagram( node );
+                diagram.getType().getDiagramViewBuilder().createCompartmentView( parent, diagram.getViewOptions(), ApplicationUtils.getGraphics() );
+                diagram.getType().getDiagramViewBuilder().createNodeView( node, diagram.getViewOptions(), ApplicationUtils.getGraphics() );
+            }
             p.x = parent.getLocation().x + parent.getView().getBounds().width - node.getView().getBounds().width;
+        }
         node.setLocation( p );
     }
 
