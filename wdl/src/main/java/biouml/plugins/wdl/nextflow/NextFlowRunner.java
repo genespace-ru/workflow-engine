@@ -44,13 +44,13 @@ import ru.biosoft.util.ApplicationUtils;
 
 public class NextFlowRunner
 {
-	private static final String BIOUML_FUNCTIONS_NF = "resources/biouml_function.nf";
+    private static final String BIOUML_FUNCTIONS_NF = "resources/genespace_function.nf";
 	private static final Logger log = Logger.getLogger(NextFlowRunner.class.getName());
 
     public static File generateFunctions(String outputDir) throws IOException
 	{
 		InputStream inputStream = NextFlowRunner.class.getResourceAsStream(BIOUML_FUNCTIONS_NF);
-		File result = new File(outputDir, "biouml_function.nf");
+        File result = new File( outputDir, "genespace_function.nf" );
 		Files.copy(inputStream, result.toPath(), StandardCopyOption.REPLACE_EXISTING);
 		return result;
 	}
@@ -260,7 +260,7 @@ public class NextFlowRunner
 		cmd.add("nextflow/nextflow:25.10.3");
 		cmd.add("nextflow");
         cmd.add( "run" );
-        cmd.add( nextFlowScriptName );
+        cmd.add( workDir + "/" + nextFlowScriptName );
 		cmd.add("-c");
 		cmd.add(workDir + "/" + nextFlowConfig);
 
