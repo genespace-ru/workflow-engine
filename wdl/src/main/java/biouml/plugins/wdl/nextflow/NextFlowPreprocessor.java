@@ -133,6 +133,8 @@ public class NextFlowPreprocessor
             expression = processSep( expression, node );
             expression = processExpression( expression, diagram, variables );
             WorkflowUtil.setExpression( node, expression );
+            if (info != null)
+                info.setExpression(expression);
         }
         return result;
     }
