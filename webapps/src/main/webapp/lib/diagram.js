@@ -224,7 +224,7 @@ function Diagram(completeName)
         	{
         		_this.autoUpdate();
         	}
-        }, 0);
+        }, 1000);
     };
     
     this.update = _.bind(function(data, fireChanged)
