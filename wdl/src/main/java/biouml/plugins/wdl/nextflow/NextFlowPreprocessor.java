@@ -828,6 +828,10 @@ public class NextFlowPreprocessor
                 ExpressionInfo info = WorkflowUtil.getExpressionInfo( output );
                 if( info.getExpression() != null )
                 {
+                    List<Node> sources = WorkflowUtil.getSources( output ).toList();
+                    if( sources.size() == 1 && info.getExpression().trim().equals( WorkflowUtil.getName( sources.get( 0 ) ) ) )
+                        continue;
+
                     Node expressionNode = DiagramGenerator.createExpressionNode( diagram, info.clone() );
                     for( Edge edge : output.getEdges() )
                     {
@@ -1296,6 +1300,7 @@ public class NextFlowPreprocessor
             else if( WorkflowUtil.getExpression(target) != null )
                 newExpression = WorkflowUtil.getExpression(target).replace(fullName, collectedName);
             targetExpression.setExpression(newExpression);
+            targetExpression.setAST( null );
 
             WorkflowUtil.setExpression( target, newExpression );
         }
