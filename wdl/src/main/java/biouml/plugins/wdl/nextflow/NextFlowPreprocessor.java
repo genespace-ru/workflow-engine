@@ -777,7 +777,7 @@ public class NextFlowPreprocessor
         for( Compartment call : calls )
         {
             String taskRef = WorkflowUtil.getTaskRef( call );
-            if( WorkflowUtil.getAlias( call ) != null && !taskRef.equals( WorkflowUtil.getAlias( call ) ) )
+            if( !WorkflowUtil.getAlias( call ).isEmpty() &&  WorkflowUtil.getAlias( call ) != null && !taskRef.equals( WorkflowUtil.getAlias( call ) ) )
             {
                 Compartment task = WorkflowUtil.findTask( taskRef, diagram );
                 if( task != null )
