@@ -1290,9 +1290,12 @@ public class NextFlowPreprocessor
         ExpressionInfo targetExpression = WorkflowUtil.getExpressionInfo( target );
         if( targetExpression != null )
         {
-            String newExpression = targetExpression.getExpression().replace( fullName, collectedName );
-
-            targetExpression.setExpression( newExpression );
+            String newExpression = null;
+            if( targetExpression.getExpression() != null )
+                newExpression = targetExpression.getExpression().replace(fullName, collectedName);
+            else if( WorkflowUtil.getExpression(target) != null )
+                newExpression = WorkflowUtil.getExpression(target).replace(fullName, collectedName);
+            targetExpression.setExpression(newExpression);
 
             WorkflowUtil.setExpression( target, newExpression );
         }
