@@ -6564,6 +6564,7 @@ function WDLViewPart()
                 this.needUpdate.wdl = true;
                 this.needUpdate.nextflow = true;
 				this.needUpdate.cwl = true;
+                setToolbarButtonEnabled(_this.runAction, true);
                 //this.diagram2wdlActionClick();
             }
         }
@@ -6698,16 +6699,26 @@ function WDLViewPart()
     this.runActionClick = function()
     {
         var settings = convertDPSToJSON(_this.settingsPane.getModel());
+        setToolbarButtonEnabled(_this.runAction, false);
         queryBioUML("web/wdl/run",
         {
             de: _this.diagram.completeName,
             settings: settings
         }, function(data)
         {
-            openBranch(data.values);
-        },
-        function(data)
-        {
+            setToolbarButtonEnabled(_this.runAction, true);
+            var path = data.values;
+            if(path)
+            {
+                refreshTreeBranch(path, true);
+                setTimeout(function()
+                {
+                    openBranch(path);
+                }, 200);
+                //openBranch(path);
+            }
+        }, function (data){
+            setToolbarButtonEnabled(_this.runAction, true);
             logger.error(data.message);
         });
     };
