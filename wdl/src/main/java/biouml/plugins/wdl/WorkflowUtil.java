@@ -462,8 +462,6 @@ public class WorkflowUtil
 
     public static String getCallName(Compartment n)
     {
-        if (n == null)
-            return "NULL";
         String alias = getAlias(n);
         if (alias != null && !alias.isEmpty())
             return alias;
