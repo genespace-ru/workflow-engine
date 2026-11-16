@@ -6704,7 +6704,16 @@ function WDLViewPart()
             settings: settings
         }, function(data)
         {
-            openBranch(data.values);
+            var path = data.values;
+            if(path)
+            {
+                refreshTreeBranch(getElementPath(path), true);
+                setTimeout(function()
+                {
+                    openBranch(path);
+                }, 200);
+                //openBranch(path);
+            }
         },
         function(data)
         {
