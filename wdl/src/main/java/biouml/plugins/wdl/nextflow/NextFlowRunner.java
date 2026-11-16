@@ -262,7 +262,7 @@ public class NextFlowRunner
 		cmd.add("nextflow/nextflow:25.10.3");
 		cmd.add("nextflow");
         cmd.add( "run" );
-        cmd.add( nextFlowScriptName );
+        cmd.add( workDir + "/" + nextFlowScriptName );
 		cmd.add("-c");
 		cmd.add(workDir + "/" + nextFlowConfig);
 
